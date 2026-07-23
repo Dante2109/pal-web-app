@@ -500,14 +500,7 @@ function LookupContent() {
               </div>
             </div>
 
-            <div className="flex gap-2 print:hidden">
-              <Link
-                href={`/qr/${result.emergencyId}`}
-                className="flex items-center justify-center gap-2 flex-1 bg-card border border-teal text-teal py-3 rounded-xl font-semibold text-sm hover:bg-teal-light transition-colors"
-              >
-                <QrCode className="w-4 h-4" /> Generate QR Code
-              </Link>
-            </div>
+
           </div>
         )}
 
