@@ -51,6 +51,43 @@ export default async function EmergencyPage({ params }: { params: Promise<{ id: 
           <p className="text-xs text-warm-gray font-mono">Emergency ID: {profile.emergencyId}</p>
         </div>
 
+        {/* Emergency Contacts — top for first responders */}
+        {profile.emergencyContacts && profile.emergencyContacts.length > 0 && (
+          <div className="bg-card border-2 border-teal/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📞</span>
+              <h3 className="text-sm font-bold text-teal uppercase tracking-wider">Emergency Contact</h3>
+            </div>
+            <div className="space-y-2">
+              {profile.emergencyContacts.map((ec, i) => (
+                <div key={i} className="flex items-center justify-between py-1">
+                  <div>
+                    <p className="text-sm font-bold text-ink">{ec.contactName}</p>
+                    <p className="text-xs text-warm-gray">{ec.contactRelationship}</p>
+                  </div>
+                  <a href={`tel:${ec.contactPhone}`} className="bg-teal text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-teal/90 transition-colors shrink-0">
+                    <span className="text-sm">📞</span>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Chief Complaint / Recent Cause */}
+        {profile.conditions && profile.conditions.length > 0 && (
+          <div className="bg-card border-2 border-critical/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🚨</span>
+              <h3 className="text-sm font-bold text-critical uppercase tracking-wider">Recent Cause / Chief Complaint</h3>
+            </div>
+            <p className="text-sm font-medium text-ink">{profile.conditions[0]}</p>
+            {profile.conditions.length > 1 && (
+              <p className="text-xs text-warm-gray mt-1">+ {profile.conditions.length - 1} other condition{profile.conditions.length > 2 ? 's' : ''}</p>
+            )}
+          </div>
+        )}
+
         {/* Vitals */}
         {(profile.height || profile.weight) && (
           <div className="bg-card border border-border rounded-xl p-4">
@@ -143,29 +180,6 @@ export default async function EmergencyPage({ params }: { params: Promise<{ id: 
                 📞 {profile.primaryDoctor.doctorPhone}
               </a>
             )}
-          </div>
-        )}
-
-        {/* Emergency Contacts */}
-        {profile.emergencyContacts && profile.emergencyContacts.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">📞</span>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Emergency Contacts</h3>
-            </div>
-            <div className="space-y-2">
-              {profile.emergencyContacts.map((ec, i) => (
-                <div key={i} className="flex items-center justify-between py-1">
-                  <div>
-                    <p className="text-sm font-medium text-ink">{ec.contactName}</p>
-                    <p className="text-xs text-warm-gray">{ec.contactRelationship}</p>
-                  </div>
-                  <a href={`tel:${ec.contactPhone}`} className="bg-teal text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-teal/90 transition-colors shrink-0">
-                    <span className="text-sm">📞</span>
-                  </a>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
