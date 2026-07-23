@@ -28,8 +28,17 @@ export default function LookupPage() {
   )
 }
 
+function PhoneIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  )
+}
+
 function LookupContent() {
   const searchParams = useSearchParams()
+  const hasAutoId = !!searchParams.get('emergencyId')
   const [emergencyId, setEmergencyId] = useState(searchParams.get('emergencyId') || '')
   const [result, setResult] = useState<EmergencyProfileResponse | null>(null)
   const [error, setError] = useState('')
@@ -95,7 +104,8 @@ function LookupContent() {
 
   return (
     <div className="flex-1 bg-base">
-      {/* Hero */}
+      {/* Hero — hidden when auto-loaded from ?emergencyId */}
+      {(!hasAutoId || !result) && (
       <div className="bg-gradient-to-br from-teal to-teal/90 px-6 py-10 text-center">
         <div className="max-w-lg mx-auto space-y-3">
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto backdrop-blur shadow-lg">
@@ -108,9 +118,11 @@ function LookupContent() {
           </p>
         </div>
       </div>
+      )}
 
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-5">
-        {/* Search Input - floating card style */}
+        {/* Search Input — hidden when auto-loaded with result */}
+        {(!hasAutoId || !result) && (
         <div className="bg-card border border-border rounded-2xl p-5 shadow-sm -mt-2 relative z-10">
           <div className="flex gap-2">
             <input
@@ -133,6 +145,7 @@ function LookupContent() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -439,7 +452,7 @@ function LookupContent() {
                       )}
                       {result.primaryDoctor.doctorPhone && (
                         <a href={`tel:${result.primaryDoctor.doctorPhone}`} className="text-sm text-teal font-medium inline-flex items-center gap-1.5 hover:underline mt-0.5">
-                          📞 {result.primaryDoctor.doctorPhone}
+                          <PhoneIcon /> {result.primaryDoctor.doctorPhone}
                         </a>
                       )}
                     </div>
@@ -450,7 +463,7 @@ function LookupContent() {
                 {result.emergencyContacts && result.emergencyContacts.length > 0 && (
                   <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="w-7 h-7 bg-critical-light rounded-lg flex items-center justify-center text-sm">📞</span>
+                      <span className="w-7 h-7 bg-critical-light rounded-lg flex items-center justify-center"><PhoneIcon /></span>
                       <h3 className="font-semibold text-ink text-sm">Emergency Contacts</h3>
                       <span className="ml-auto bg-critical-light text-critical text-[10px] font-medium px-2 py-0.5 rounded-full">{result.emergencyContacts.length}</span>
                     </div>
@@ -473,7 +486,7 @@ function LookupContent() {
                               className="bg-teal text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-teal/90 transition-colors shrink-0 shadow-xs"
                               title={ec.contactPhone}
                             >
-                              📞
+                              <PhoneIcon />
                             </a>
                           </div>
                         </div>
@@ -506,8 +519,8 @@ function LookupContent() {
           </div>
         )}
 
-        {/* Quick Tips */}
-        {!result && !searched && (
+        {/* Quick Tips — hidden when auto-loaded */}
+        {!hasAutoId && !result && !searched && (
           <div className="bg-card border border-border rounded-xl p-5 space-y-3">
             <h3 className="text-sm font-semibold text-ink">ℹ️ Quick Tips</h3>
             <div className="space-y-2 text-xs text-warm-gray leading-relaxed">
