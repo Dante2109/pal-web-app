@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import * as api from '@/lib/api'
 import type { EmergencyProfileResponse } from '@/lib/api'
 
@@ -16,13 +17,41 @@ function formatGender(g: string | undefined | null) {
 }
 
 export default function LookupPage() {
-  const [emergencyId, setEmergencyId] = useState('')
+  return (
+    <Suspense fallback={
+      <div className="flex-1 bg-base flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-teal/20 border-t-teal rounded-full animate-spin" />
+      </div>
+    }>
+      <LookupContent />
+    </Suspense>
+  )
+}
+
+function LookupContent() {
+  const searchParams = useSearchParams()
+  const [emergencyId, setEmergencyId] = useState(searchParams.get('emergencyId') || '')
   const [result, setResult] = useState<EmergencyProfileResponse | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const id = searchParams.get('emergencyId')
+    if (!id) return
+    setLoading(true)
+    api.getEmergencyProfile(id).then(data => {
+      if (data) setResult(data)
+      else setError('No patient found with that Emergency ID.')
+    }).catch(() => {
+      setError('Network error. Please try again.')
+    }).finally(() => {
+      setLoading(false)
+      setSearched(true)
+    })
+  }, [])
 
   async function handleLookup() {
     const id = emergencyId.trim()
