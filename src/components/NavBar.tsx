@@ -6,6 +6,10 @@ import Link from 'next/link'
 export default function NavBar() {
   const { isAuthenticated, role, logout } = useAuth()
 
+  if (role === 'DOCTOR' || role === 'HOSPITAL') {
+    return null
+  }
+
   if (!isAuthenticated) {
     return (
       <nav className="bg-card border-b border-border px-6 py-3 flex items-center justify-between shrink-0">
