@@ -371,7 +371,7 @@ function DoctorCard({ doctor, onSelect }: { doctor: Doctor; onSelect: (d: Doctor
             <div className="mt-3 flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-warm-gray uppercase tracking-wider">Starts From</span>
-                <p className="text-sm font-bold text-ink">${doctor.consultationCharge}</p>
+                <p className="text-sm font-bold text-ink">₹{doctor.consultationCharge}</p>
               </div>
               <span className="flex items-center gap-1 text-xs text-teal font-medium">
                 <Clock className="w-3 h-3" /> View Schedule
@@ -599,7 +599,7 @@ function AddDoctorForm({ token, onBack, onCreated }: { token: string | null; onB
         {/* Appointment Information */}
         <Section title="Appointment Information">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <InputField label="Consultation Charge ($)" value={String(form.consultationCharge)} onChange={v => setForm(f => ({ ...f, consultationCharge: Number(v) || 0 }))} placeholder="499" type="number" />
+            <InputField label="Consultation Charge (₹)" value={String(form.consultationCharge)} onChange={v => setForm(f => ({ ...f, consultationCharge: Number(v) || 0 }))} placeholder="499" type="number" />
           </div>
         </Section>
       </div>
@@ -648,7 +648,7 @@ function DoctorDetailView({ doctor, onBack }: { doctor: Doctor; onBack: () => vo
             </div>
             <div className="bg-card border border-border rounded-xl px-5 py-3 text-center shrink-0">
               <p className="text-[10px] text-warm-gray uppercase tracking-wider">Consultation</p>
-              <p className="text-lg font-bold text-teal">${doctor.consultationCharge}<span className="text-xs text-warm-gray font-normal"> / 30 Min</span></p>
+              <p className="text-lg font-bold text-teal">₹{doctor.consultationCharge}<span className="text-xs text-warm-gray font-normal"> / 30 Min</span></p>
             </div>
           </div>
         </div>
