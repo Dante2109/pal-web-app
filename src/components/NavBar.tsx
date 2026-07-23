@@ -2,9 +2,11 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function NavBar() {
   const { isAuthenticated, role, logout } = useAuth()
+  const pathname = usePathname()
 
   if (role === 'DOCTOR' || role === 'HOSPITAL') {
     return null
@@ -20,12 +22,16 @@ export default function NavBar() {
           <span className="font-bold text-ink text-sm">MediGuardian</span>
         </Link>
         <div className="flex flex-col items-end gap-0.5">
-          <Link href="/login" className="text-xs text-warm-gray hover:text-teal transition-colors">
-            Sign In
-          </Link>
-          <Link href="/lookup" className="bg-critical text-white text-[10px] font-semibold px-2 py-0.5 rounded hover:bg-critical/90 transition-colors">
-            🆘 Emergency Lookup
-          </Link>
+          {pathname !== '/login' && (
+            <Link href="/login" className="text-xs text-warm-gray hover:text-teal transition-colors">
+              Sign In
+            </Link>
+          )}
+          {pathname !== '/lookup' && (
+            <Link href="/lookup" className="bg-critical text-white text-[10px] font-semibold px-2 py-0.5 rounded hover:bg-critical/90 transition-colors">
+              🆘 Emergency Lookup
+            </Link>
+          )}
         </div>
       </nav>
     )
@@ -53,9 +59,11 @@ export default function NavBar() {
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <Link href="/lookup" className="text-xs text-warm-gray hover:text-teal transition-colors">
-          🔍 Lookup
-        </Link>
+        {pathname !== '/lookup' && (
+          <Link href="/lookup" className="text-xs text-warm-gray hover:text-teal transition-colors">
+            🔍 Lookup
+          </Link>
+        )}
         {role && roleLinks[role]?.map(link => (
           <Link key={link.href} href={link.href} className="text-xs text-warm-gray hover:text-teal transition-colors">
             {link.label}
