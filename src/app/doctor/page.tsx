@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import AuthGuard from '@/components/AuthGuard'
 import DashboardSidebar from '@/components/DashboardSidebar'
+import { Search } from 'lucide-react'
 import * as api from '@/lib/api'
 import type { ProfileResponse } from '@/lib/api'
 
@@ -179,13 +180,13 @@ function PatientLookup() {
           type="text" value={emergencyId} onChange={e => setEmergencyId(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleLookup()}
           placeholder="Emergency ID (UUID)"
-          className="flex-1 px-4 py-2.5 bg-base border border-border rounded-lg text-sm text-ink placeholder:text-warm-gray focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition-all font-mono"
+          className="flex-1 px-3 sm:px-4 py-2.5 bg-base border border-border rounded-lg text-sm text-ink placeholder:text-warm-gray focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition-all font-mono"
         />
         <button
           onClick={handleLookup} disabled={loading || !emergencyId.trim()}
-          className="bg-teal text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-teal/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+          className="bg-teal text-white px-3 sm:px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-teal/90 disabled:opacity-50 transition-colors flex items-center gap-1 sm:gap-2 shrink-0"
         >
-          {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Searching</> : 'Search'}
+          <span className="sm:hidden"><Search className="w-4 h-4" /></span><span className="hidden sm:inline">{loading ? 'Searching...' : 'Search'}</span>
         </button>
       </div>
       {error && <p className="text-xs text-critical bg-critical-light rounded-lg px-3 py-2">{error}</p>}

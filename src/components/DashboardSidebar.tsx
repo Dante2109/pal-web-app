@@ -19,6 +19,7 @@ const navItems: Record<string, NavItem[]> = {
     { icon: 'Bell', label: 'Notifications', section: 'notifications' },
   ],
   HOSPITAL: [
+    { icon: 'Stethoscope', label: 'Doctors', section: 'doctors' },
     { icon: 'Search', label: 'Search Patient', section: 'search' },
     { icon: 'Smartphone', label: 'QR Scan History', section: 'scan' },
     { icon: 'AlertTriangle', label: 'Emergency Lookup', section: 'lookup' },
@@ -167,6 +168,7 @@ function NavIcon({ name }: { name: string }) {
     Smartphone: <svg {...props}><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>,
     Baby: <svg {...props}><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" /><path d="M6 14a6 6 0 0 1 12 0" /><circle cx="9" cy="9" r=".5" /><circle cx="15" cy="9" r=".5" /></svg>,
     AlertTriangle: <svg {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
+    Stethoscope: <svg {...props}><path d="M4 8V6a4 4 0 0 1 8 0v2" /><path d="M4 12a4 4 0 0 0 8 0" /><path d="M16 8h1a3 3 0 0 1 3 3v1a6 6 0 0 1-6 6h-2" /><circle cx="16" cy="8" r="3" /></svg>,
   }
   return icons[name] || null
 }
