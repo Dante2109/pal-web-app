@@ -463,10 +463,3 @@ export async function getMyFamilies(token: string): Promise<ApiResponse<FamilyRe
   })
   return res.json()
 }
-
-export async function getFamilyById(token: string, familyId: string): Promise<ApiResponse<FamilyResponse>> {
-  const res = await fetch(`${BASE_URL}/api/v1/families/${familyId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  return res.json()
-}
