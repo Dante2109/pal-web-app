@@ -34,7 +34,7 @@ export default function HomePage() {
     <div className="flex-1 flex flex-col items-center justify-center p-6 gap-8">
       <div className="text-center max-w-md">
         <div className="w-16 h-16 bg-teal rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <span className="text-white text-3xl font-bold">M</span>
+          <span className="text-white text-3xl font-bold">P</span>
         </div>
         <h1 className="text-3xl font-bold text-ink mb-2">PAL</h1>
         <p className="text-warm-gray text-base leading-relaxed">
