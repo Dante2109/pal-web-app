@@ -14,6 +14,7 @@ const navItems: Record<string, NavItem[]> = {
   DOCTOR: [
     { icon: 'LayoutDashboard', label: 'Dashboard', section: 'profile' },
     { icon: 'Search', label: 'Patient Lookup', section: 'lookup' },
+    { icon: 'Smartphone', label: 'Scan History', section: 'scan' },
     { icon: 'FileText', label: 'Medical Records', section: 'records' },
     { icon: 'Brain', label: 'AI Analysis', section: 'ai' },
     { icon: 'Bell', label: 'Notifications', section: 'notifications' },

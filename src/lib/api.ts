@@ -165,12 +165,13 @@ export interface ScanHistory {
   scanTime: string
 }
 
-export async function getScanHistory(token: string, limit = 10): Promise<ScanHistory[]> {
-  const res = await fetch(`${BASE_URL}/api/v1/hospital/scanned-history?limit=${limit}`, {
+export async function getScanHistory(token: string): Promise<ScanHistory[]> {
+  const res = await fetch(`${BASE_URL}/api/v1/emergency/scan-history`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) return []
-  return res.json()
+  const json = await res.json()
+  return json.data || json
 }
 
 export interface PatientSearchResult {

@@ -26,6 +26,7 @@ function DoctorContent() {
   const sectionTitle: Record<string, string> = {
     profile: 'Profile & Stats',
     lookup: 'Patient Lookup',
+    scan: 'Scan History',
     records: 'Medical Records',
     ai: 'AI Medical Analysis',
     notifications: 'Notifications',
@@ -69,6 +70,7 @@ function DoctorContent() {
           <div className="max-w-4xl mx-auto space-y-6">
             {activeSection === 'profile' && <ProfileSection profile={myProfile} loading={loading} />}
             {activeSection === 'lookup' && <PatientLookup token={token} />}
+            {activeSection === 'scan' && <ScanHistoryPanel token={token} />}
             {activeSection === 'records' && <RecordsLookup token={token} />}
             {activeSection === 'ai' && <AIAnalysis token={token} />}
             {activeSection === 'notifications' && <NotificationsPanel token={token} />}
@@ -217,6 +219,47 @@ function PatientLookup({ token }: { token: string | null }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function ScanHistoryPanel({ token }: { token: string | null }) {
+  const [scans, setScans] = useState<api.ScanHistory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!token) return
+    api.getScanHistory(token).then(data => { setScans(data); setLoading(false) }).catch(() => { setError('Unable to load scan history.'); setLoading(false) })
+  }, [token])
+
+  if (loading) return <div className="bg-card border border-border rounded-xl p-8 text-center"><p className="text-sm text-warm-gray">Loading scan history...</p></div>
+
+  if (error || scans.length === 0) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-8 text-center space-y-3">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#8A8F91" strokeWidth="1.5" strokeLinecap="round" className="mx-auto"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
+        <p className="text-sm text-warm-gray font-medium">{error || 'No QR scans recorded yet'}</p>
+        <p className="text-xs text-warm-gray max-w-sm mx-auto">Scans are recorded when you access emergency profiles.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="divide-y divide-border">
+        {scans.map(s => (
+          <div key={s.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-subtle/50 transition-colors">
+            <div className="w-8 h-8 bg-teal-light rounded-lg flex items-center justify-center text-teal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-ink font-medium font-mono">{s.scannedProfileId}</p>
+              <p className="text-xs text-warm-gray">{new Date(s.scanTime).toLocaleString()}</p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
