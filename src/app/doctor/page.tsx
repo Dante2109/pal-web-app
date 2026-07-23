@@ -68,7 +68,7 @@ function DoctorContent() {
         <div className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-4xl mx-auto space-y-6">
             {activeSection === 'profile' && <ProfileSection profile={myProfile} loading={loading} />}
-            {activeSection === 'lookup' && <PatientLookup />}
+            {activeSection === 'lookup' && <PatientLookup token={token} />}
             {activeSection === 'records' && <RecordsLookup token={token} />}
             {activeSection === 'ai' && <AIAnalysis token={token} />}
             {activeSection === 'notifications' && <NotificationsPanel token={token} />}
@@ -154,7 +154,7 @@ function ProfileSection({ profile, loading }: { profile: ProfileResponse | null;
   )
 }
 
-function PatientLookup() {
+function PatientLookup({ token }: { token: string | null }) {
   const [emergencyId, setEmergencyId] = useState('')
   const [result, setResult] = useState<api.EmergencyProfileResponse | null>(null)
   const [error, setError] = useState('')
@@ -164,7 +164,7 @@ function PatientLookup() {
     if (!emergencyId.trim()) return
     setLoading(true); setError(''); setResult(null)
     try {
-      const data = await api.getEmergencyProfile(emergencyId.trim())
+      const data = await api.getEmergencyProfile(emergencyId.trim(), token)
       if (data) setResult(data)
       else setError('No patient found with that Emergency ID')
     } catch { setError('Network error') }

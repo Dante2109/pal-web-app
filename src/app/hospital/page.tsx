@@ -61,7 +61,7 @@ function HospitalContent() {
             {activeSection === 'doctors' && <DoctorManagement token={token} />}
             {activeSection === 'search' && <PatientSearch token={token} />}
             {activeSection === 'scan' && <ScanHistoryPanel token={token} />}
-            {activeSection === 'lookup' && <EmergencyLookup />}
+            {activeSection === 'lookup' && <EmergencyLookup token={token} />}
             {activeSection === 'newborn' && <NewbornRegistration token={token} />}
           </div>
         </div>
@@ -210,7 +210,7 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
   )
 }
 
-function EmergencyLookup() {
+function EmergencyLookup({ token }: { token: string | null }) {
   const [emergencyId, setEmergencyId] = useState('')
   const [result, setResult] = useState<api.EmergencyProfileResponse | null>(null)
   const [error, setError] = useState('')
@@ -220,7 +220,7 @@ function EmergencyLookup() {
     if (!emergencyId.trim()) return
     setLoading(true); setError(''); setResult(null)
     try {
-      const data = await api.getEmergencyProfile(emergencyId.trim())
+      const data = await api.getEmergencyProfile(emergencyId.trim(), token)
       if (data) setResult(data)
       else setError('No patient found with that Emergency ID')
     } catch { setError('Network error') }
