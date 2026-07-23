@@ -19,7 +19,7 @@ export default function NavBar() {
           <div className="w-8 h-8 bg-teal rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">M</span>
           </div>
-          <span className="font-bold text-ink text-sm">MediGuardian</span>
+          <span className="font-bold text-ink text-sm">PAL</span>
         </Link>
         <div className="flex flex-col items-end gap-0.5">
           {pathname !== '/login' && (
@@ -52,7 +52,7 @@ export default function NavBar() {
           <div className="w-8 h-8 bg-teal rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">M</span>
           </div>
-          <span className="font-bold text-ink text-sm">MediGuardian</span>
+          <span className="font-bold text-ink text-sm">PAL</span>
         </Link>
         <span className="bg-teal-light text-teal text-[10px] font-semibold px-2 py-0.5 rounded-full ml-1 uppercase">
           {role}

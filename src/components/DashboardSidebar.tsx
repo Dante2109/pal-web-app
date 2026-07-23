@@ -36,7 +36,7 @@ export default function DashboardSidebar({ activeSection, onSectionChange }: {
 
   const items = role ? navItems[role] ?? [] : []
 
-  const initials = role?.slice(0, 2).toUpperCase() ?? 'MG'
+  const initials = role?.slice(0, 2).toUpperCase() ?? 'PL'
 
   return (
     <>
@@ -71,8 +71,8 @@ export default function DashboardSidebar({ activeSection, onSectionChange }: {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-bold text-ink leading-tight">MediGuardian</p>
-              <p className="text-[10px] text-warm-gray leading-tight">Healthcare Platform</p>
+              <p className="text-sm font-bold text-ink leading-tight">PAL</p>
+              <p className="text-[10px] text-warm-gray leading-tight">Emergency Medical Profile</p>
             </div>
           </Link>
         </div>

@@ -63,7 +63,7 @@ export default function LoginPage() {
             <span className="text-white text-2xl font-bold">M</span>
           </div>
           <h1 className="text-2xl font-bold text-ink">Welcome back</h1>
-          <p className="text-sm text-warm-gray mt-1">Sign in to MediGuardian</p>
+          <p className="text-sm text-warm-gray mt-1">Sign in to PAL</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

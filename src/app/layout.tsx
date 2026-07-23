@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import NavBar from "@/components/NavBar";
 
 export const metadata: Metadata = {
-  title: "MediGuardian — Emergency Medical Profile",
+  title: "PAL - Emergency Medical Profile",
   description: "Healthcare platform for emergency medical care.",
 };
 
@@ -20,7 +20,7 @@ export default function RootLayout({
           <NavBar />
           <main className="flex-1 flex flex-col">{children}</main>
           <footer className="bg-card border-t border-border px-6 py-3 text-center text-[10px] text-warm-gray shrink-0">
-            MediGuardian · Emergency Medical Profile System
+            PAL · Emergency Medical Profile System
           </footer>
         </AuthProvider>
       </body>

@@ -17,8 +17,8 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-const STORAGE_KEY_TOKEN = 'mg_token'
-const STORAGE_KEY_ROLE = 'mg_role'
+const STORAGE_KEY_TOKEN = 'pal_token'
+const STORAGE_KEY_ROLE = 'pal_role'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ token: null, role: null, loading: true })

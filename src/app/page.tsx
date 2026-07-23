@@ -36,7 +36,7 @@ export default function HomePage() {
         <div className="w-16 h-16 bg-teal rounded-2xl flex items-center justify-center mx-auto mb-4">
           <span className="text-white text-3xl font-bold">M</span>
         </div>
-        <h1 className="text-3xl font-bold text-ink mb-2">MediGuardian</h1>
+        <h1 className="text-3xl font-bold text-ink mb-2">PAL</h1>
         <p className="text-warm-gray text-base leading-relaxed">
           Emergency medical profile system for patients, doctors, and hospitals.
         </p>
