@@ -1,7 +1,7 @@
 import { getEmergencyProfile } from '@/lib/api'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AlertTriangle, Phone, User, Stethoscope, Pill, Activity, HeartPulse, Syringe, Dna, IdCard } from 'lucide-react'
+import { Phone } from 'lucide-react'
 
 export default async function EmergencyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -22,324 +22,181 @@ export default async function EmergencyPage({ params }: { params: Promise<{ id: 
     : null
 
   return (
-    <div className="flex-1 bg-base">
-      {/* Critical header banner */}
-      <div className="bg-critical-light border-b border-red-200 px-6 py-3 flex items-center gap-3">
-        <div className="w-8 h-8 bg-critical rounded-lg flex items-center justify-center shrink-0">
-          <AlertTriangle className="w-4 h-4 text-white" />
-        </div>
-        <div>
-          <h1 className="text-sm font-bold text-critical uppercase tracking-wider">Emergency Medical Profile</h1>
-          <p className="text-xs text-critical/70">Public access &middot; No login required</p>
+    <div className="flex-1 bg-white max-w-xl mx-auto px-4 sm:px-6">
+      {/* Sticky Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-200 py-3 mb-6 z-10">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-red-600" />
+          <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Emergency Profile</span>
         </div>
       </div>
 
-      <div className="px-6 py-4 pb-24 space-y-4 max-w-lg mx-auto">
-        {/* Patient Identity */}
-        <div className="bg-card border-2 border-critical/30 rounded-xl p-5 text-center space-y-3">
-          <div className="w-20 h-20 bg-critical-light rounded-full flex items-center justify-center mx-auto">
-            <User className="w-10 h-10 text-critical" />
-          </div>
-          <h2 className="text-2xl font-bold text-ink">{displayName}</h2>
-          <div className="flex items-center justify-center gap-3 text-sm text-warm-gray">
-            {age && <span>Age: {age} yrs</span>}
+      {/* Hero Section */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">{displayName}</h1>
+          <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+            {age && <span>{age} yrs</span>}
             {profile.gender && (
-              <>
-                <span className="w-1 h-1 rounded-full bg-warm-gray" />
-                <span>{profile.gender.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
-              </>
+              <span>{profile.gender.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
             )}
           </div>
           {bloodDisplay && (
-            <div className="inline-flex items-center gap-2 bg-teal-light rounded-lg px-5 py-2">
-              <HeartPulse className="w-5 h-5 text-teal" />
-              <span className="text-xl font-bold text-teal font-mono">{bloodDisplay}</span>
+            <div className="mt-2">
+              <span className="inline-block bg-red-600 text-white text-xs font-bold px-3 py-1 rounded tracking-wider">{bloodDisplay}</span>
             </div>
           )}
-          <div className="flex items-center justify-center gap-1.5 text-xs text-warm-gray">
-            <IdCard className="w-3.5 h-3.5" />
-            <span className="font-mono">ID: {profile.emergencyId}</span>
+        </div>
+        {profile.mobile && (
+          <a href={`tel:${profile.mobile}`} className="shrink-0 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+            <Phone className="w-5 h-5 text-gray-700" />
+          </a>
+        )}
+      </div>
+
+      <div className="text-xs text-gray-400 font-mono mb-6 pb-4 border-b border-gray-200">{profile.emergencyId}</div>
+
+      {/* Critical Alerts */}
+      {(profile.conditions?.length || profile.allergies?.length) ? (
+        <div className="bg-red-50 rounded-lg px-4 py-3 mb-6">
+          {profile.allergies && profile.allergies.length > 0 && (
+            <div className="mb-3 last:mb-0">
+              <p className="text-xs font-semibold text-red-700 mb-1.5">Allergies</p>
+              <div className="flex flex-wrap gap-1.5">
+                {profile.allergies.map(a => (
+                  <span key={a} className="text-sm font-medium text-red-800">{a}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {profile.conditions && profile.conditions.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-red-700 mb-1.5">Chief Complaint</p>
+              <p className="text-sm font-medium text-red-800">{profile.conditions[0]}</p>
+              {profile.conditions.length > 1 && (
+                <p className="text-xs text-red-600 mt-0.5">+ {profile.conditions.length - 1} more</p>
+              )}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {/* Emergency Contacts */}
+      {profile.emergencyContacts && profile.emergencyContacts.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-gray-500 mb-2">Emergency Contact</p>
+          <div className="space-y-2">
+            {profile.emergencyContacts.map((ec, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{ec.contactName}</p>
+                  <p className="text-xs text-gray-500">{ec.contactRelationship}</p>
+                </div>
+                <a href={`tel:${ec.contactPhone}`} className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0">
+                  <Phone className="w-4 h-4 text-gray-700" />
+                </a>
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Emergency Contacts — top for first responders */}
-        {profile.emergencyContacts && profile.emergencyContacts.length > 0 && (
-          <div className="bg-card border-2 border-teal/30 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-teal rounded-lg flex items-center justify-center shrink-0">
-                <Phone className="w-3.5 h-3.5 text-white" />
-              </div>
-              <h3 className="text-sm font-bold text-teal uppercase tracking-wider">Emergency Contact</h3>
-            </div>
-            <div className="space-y-2">
-              {profile.emergencyContacts.map((ec, i) => (
-                <div key={i} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{ec.contactName}</p>
-                    <p className="text-xs text-warm-gray">{ec.contactRelationship}</p>
-                  </div>
-                  <a href={`tel:${ec.contactPhone}`} className="bg-teal text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-teal/90 transition-colors shrink-0">
-                    <Phone className="w-4 h-4" />
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Chief Complaint / Recent Cause */}
-        {profile.conditions && profile.conditions.length > 0 && (
-          <div className="bg-critical-light border border-red-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 bg-critical rounded-lg flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-3.5 h-3.5 text-white" />
-              </div>
-              <h3 className="text-sm font-bold text-critical uppercase tracking-wider">Chief Complaint</h3>
-            </div>
-            <p className="text-sm font-semibold text-ink">{profile.conditions[0]}</p>
-            {profile.conditions.length > 1 && (
-              <p className="text-xs text-warm-gray mt-1">+ {profile.conditions.length - 1} other condition{profile.conditions.length > 2 ? 's' : ''}</p>
-            )}
-          </div>
-        )}
-
-        {/* Vitals */}
+      {/* Medical Details Grid */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 mb-8">
         {(profile.height || profile.weight) && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-teal rounded-lg flex items-center justify-center shrink-0">
-                <Activity className="w-3.5 h-3.5 text-white" />
-              </div>
-              <h3 className="text-xs font-bold text-teal uppercase tracking-wider">Vitals</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {profile.height && (
-                <div className="bg-subtle rounded-lg p-3 text-center">
-                  <p className="text-xs text-warm-gray">Height</p>
-                  <p className="text-sm font-bold text-ink">{profile.height} cm</p>
-                </div>
-              )}
-              {profile.weight && (
-                <div className="bg-subtle rounded-lg p-3 text-center">
-                  <p className="text-xs text-warm-gray">Weight</p>
-                  <p className="text-sm font-bold text-ink">{profile.weight} kg</p>
-                </div>
-              )}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Vitals</p>
+            <div className="space-y-0.5">
+              {profile.height && <p className="text-sm text-gray-900">{profile.height} cm</p>}
+              {profile.weight && <p className="text-sm text-gray-900">{profile.weight} kg</p>}
             </div>
           </div>
         )}
 
-        {/* Critical Alert — Allergies */}
-        {profile.allergies && profile.allergies.length > 0 && (
-          <div className="bg-critical-light border border-red-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-critical rounded-lg flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-3.5 h-3.5 text-white" />
-              </div>
-              <h3 className="text-sm font-bold text-critical uppercase tracking-wider">Allergies</h3>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {profile.allergies.map(a => (
-                <span key={a} className="bg-white border border-red-200 text-critical px-3 py-1 rounded-full text-sm font-medium">
-                  {a}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Chronic Conditions */}
-        {profile.conditions && profile.conditions.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
-                <Stethoscope className="w-3.5 h-3.5 text-amber-600" />
-              </div>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Chronic Conditions</h3>
-            </div>
-            <div className="space-y-1.5">
-              {profile.conditions.map(c => (
-                <div key={c} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mt-1.5 shrink-0" />
-                  <p className="text-sm text-ink">{c}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Current Medications */}
         {profile.medications && profile.medications.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-                <Pill className="w-3.5 h-3.5 text-blue-600" />
-              </div>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Current Medications</h3>
-            </div>
-            <div className="space-y-1.5">
-              {profile.medications.map(m => (
-                <div key={m} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 shrink-0" />
-                  <p className="text-sm text-ink">{m}</p>
-                </div>
-              ))}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Medications</p>
+            <div className="space-y-0.5">
+              {profile.medications.map(m => <p key={m} className="text-sm text-gray-900">{m}</p>)}
             </div>
           </div>
         )}
 
-        {/* Surgeries */}
         {profile.surgeries && profile.surgeries.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
-                <Activity className="w-3.5 h-3.5 text-purple-600" />
-              </div>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Surgical History</h3>
-            </div>
-            <div className="space-y-1.5">
-              {profile.surgeries.map(s => (
-                <div key={s} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 shrink-0" />
-                  <p className="text-sm text-ink">{s}</p>
-                </div>
-              ))}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Surgical History</p>
+            <div className="space-y-0.5">
+              {profile.surgeries.map(s => <p key={s} className="text-sm text-gray-900">{s}</p>)}
             </div>
           </div>
         )}
 
-        {/* Implants & Devices */}
         {(profile.implants?.length || profile.medicalDevices?.length) ? (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                <Activity className="w-3.5 h-3.5 text-slate-600" />
-              </div>
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Implants &amp; Devices</h3>
-            </div>
-            <div className="space-y-1.5">
-              {profile.implants?.map(i => (
-                <p key={i} className="text-sm text-ink flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full" /> {i}
-                </p>
-              ))}
-              {profile.medicalDevices?.map(d => (
-                <p key={d} className="text-sm text-ink flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full" /> {d}
-                </p>
-              ))}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Implants & Devices</p>
+            <div className="space-y-0.5">
+              {profile.implants?.map(i => <p key={i} className="text-sm text-gray-900">{i}</p>)}
+              {profile.medicalDevices?.map(d => <p key={d} className="text-sm text-gray-900">{d}</p>)}
             </div>
           </div>
         ) : null}
 
-        {/* Primary Doctor */}
-        {profile.primaryDoctor && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-teal rounded-lg flex items-center justify-center shrink-0">
-                <Stethoscope className="w-3.5 h-3.5 text-white" />
-              </div>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Primary Doctor</h3>
+        {profile.vaccinations && profile.vaccinations.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Vaccinations</p>
+            <div className="space-y-0.5">
+              {profile.vaccinations.map(v => <p key={v} className="text-sm text-gray-900">{v}</p>)}
             </div>
-            <p className="text-sm font-semibold text-ink">{profile.primaryDoctor.doctorName}</p>
-            {profile.primaryDoctor.doctorHospital && (
-              <p className="text-xs text-warm-gray mt-0.5">{profile.primaryDoctor.doctorHospital}</p>
-            )}
+          </div>
+        )}
+
+        {profile.familyHistory && profile.familyHistory.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Family History</p>
+            <div className="space-y-0.5">
+              {profile.familyHistory.map(h => <p key={h} className="text-sm text-gray-900">{h}</p>)}
+            </div>
+          </div>
+        )}
+
+        {profile.lifestyle && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Lifestyle</p>
+            <div className="space-y-0.5">
+              {profile.lifestyle.smoking && <p className="text-sm text-gray-900 capitalize">Smoking: {profile.lifestyle.smoking.toLowerCase()}</p>}
+              {profile.lifestyle.alcohol && <p className="text-sm text-gray-900 capitalize">Alcohol: {profile.lifestyle.alcohol.toLowerCase()}</p>}
+              {profile.lifestyle.exercise && <p className="text-sm text-gray-900 capitalize">Exercise: {profile.lifestyle.exercise.toLowerCase()}</p>}
+            </div>
+          </div>
+        )}
+
+        {profile.primaryDoctor && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1">Primary Doctor</p>
+            <p className="text-sm font-medium text-gray-900">{profile.primaryDoctor.doctorName}</p>
+            {profile.primaryDoctor.doctorHospital && <p className="text-xs text-gray-500">{profile.primaryDoctor.doctorHospital}</p>}
             {profile.primaryDoctor.doctorPhone && (
-              <a href={`tel:${profile.primaryDoctor.doctorPhone}`} className="text-sm text-teal font-medium mt-2 inline-flex items-center gap-1.5 hover:underline">
-                <Phone className="w-3.5 h-3.5" />
-                {profile.primaryDoctor.doctorPhone}
+              <a href={`tel:${profile.primaryDoctor.doctorPhone}`} className="text-sm text-gray-700 inline-flex items-center gap-1 mt-0.5">
+                <Phone className="w-3 h-3" /> {profile.primaryDoctor.doctorPhone}
               </a>
             )}
           </div>
         )}
-
-        {/* Lifestyle */}
-        {profile.lifestyle && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
-                <HeartPulse className="w-3.5 h-3.5 text-emerald-600" />
-              </div>
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Lifestyle</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {profile.lifestyle.smoking && (
-                <div className="bg-subtle rounded-lg p-2.5 text-center">
-                  <p className="text-[10px] text-warm-gray uppercase tracking-wider">Smoking</p>
-                  <p className="text-sm font-semibold text-ink capitalize mt-0.5">{profile.lifestyle.smoking.toLowerCase()}</p>
-                </div>
-              )}
-              {profile.lifestyle.alcohol && (
-                <div className="bg-subtle rounded-lg p-2.5 text-center">
-                  <p className="text-[10px] text-warm-gray uppercase tracking-wider">Alcohol</p>
-                  <p className="text-sm font-semibold text-ink capitalize mt-0.5">{profile.lifestyle.alcohol.toLowerCase()}</p>
-                </div>
-              )}
-              {profile.lifestyle.exercise && (
-                <div className="bg-subtle rounded-lg p-2.5 text-center">
-                  <p className="text-[10px] text-warm-gray uppercase tracking-wider">Exercise</p>
-                  <p className="text-sm font-semibold text-ink capitalize mt-0.5">{profile.lifestyle.exercise.toLowerCase()}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Vaccinations */}
-        {profile.vaccinations && profile.vaccinations.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
-                <Syringe className="w-3.5 h-3.5 text-green-600" />
-              </div>
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Vaccinations</h3>
-            </div>
-            <div className="space-y-1.5">
-              {profile.vaccinations.map(v => (
-                <div key={v} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0" />
-                  <p className="text-sm text-ink">{v}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Family History */}
-        {profile.familyHistory && profile.familyHistory.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-rose-50 rounded-lg flex items-center justify-center shrink-0">
-                <Dna className="w-3.5 h-3.5 text-rose-600" />
-              </div>
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Family History</h3>
-            </div>
-            <div className="space-y-1.5">
-              {profile.familyHistory.map(h => (
-                <div key={h} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 bg-rose-400 rounded-full mt-1.5 shrink-0" />
-                  <p className="text-sm text-ink">{h}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Footer Actions */}
-        <div className="flex gap-3 pt-2">
-          <Link
-            href={`/qr/${profile.profileId}`}
-            className="flex-1 bg-card border border-teal text-teal text-center py-3 rounded-xl font-semibold text-sm hover:bg-teal-light transition-colors"
-          >
-            Show QR Code
-          </Link>
-        </div>
-
-        <p className="text-[10px] text-warm-gray text-center pt-2">
-          This emergency profile is publicly accessible for first responders.
-        </p>
       </div>
+
+      {/* Footer */}
+      <div className="flex gap-3 pt-4 border-t border-gray-200">
+        <Link
+          href={`/qr/${profile.profileId}`}
+          className="flex-1 border border-gray-200 text-gray-700 text-center py-3 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+        >
+          Show QR Code
+        </Link>
+      </div>
+
+      <p className="text-xs text-gray-400 text-center py-4">
+        Publicly accessible for first responders.
+      </p>
     </div>
   )
 }
