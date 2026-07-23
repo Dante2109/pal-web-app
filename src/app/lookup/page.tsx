@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar } from 'lucide-react'
 import * as api from '@/lib/api'
 import type { EmergencyProfileResponse } from '@/lib/api'
@@ -30,6 +31,7 @@ export default function LookupPage() {
 }
 
 function LookupContent() {
+  const { token } = useAuth()
   const searchParams = useSearchParams()
   const hasAutoId = !!searchParams.get('emergencyId')
   const [emergencyId, setEmergencyId] = useState(searchParams.get('emergencyId') || '')
@@ -44,7 +46,7 @@ function LookupContent() {
     const id = searchParams.get('emergencyId')
     if (!id) return
     setLoading(true)
-    api.getEmergencyProfile(id).then(data => {
+    api.getEmergencyProfile(id, token).then(data => {
       if (data) setResult(data)
       else setError('No patient found with that Emergency ID.')
     }).catch(() => {
@@ -53,14 +55,14 @@ function LookupContent() {
       setLoading(false)
       setSearched(true)
     })
-  }, [])
+  }, [token])
 
   async function handleLookup() {
     const id = emergencyId.trim()
     if (!id) return
     setLoading(true); setError(''); setResult(null); setSearched(true)
     try {
-      const data = await api.getEmergencyProfile(id)
+      const data = await api.getEmergencyProfile(id, token)
       if (data) setResult(data)
       else setError('No patient found with that Emergency ID.')
     } catch {

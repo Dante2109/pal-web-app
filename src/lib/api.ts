@@ -84,8 +84,10 @@ export interface EmergencyProfileResponse {
   emergencyId: string
 }
 
-export async function getEmergencyProfile(emergencyId: string): Promise<EmergencyProfileResponse | null> {
-  const res = await fetch(`${BASE_URL}/api/v1/emergency/${emergencyId}`, { cache: 'no-store' })
+export async function getEmergencyProfile(emergencyId: string, token?: string | null): Promise<EmergencyProfileResponse | null> {
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(`${BASE_URL}/api/v1/emergency/${emergencyId}`, { cache: 'no-store', headers })
   if (!res.ok) return null
   return res.json()
 }
