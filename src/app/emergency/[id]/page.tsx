@@ -12,6 +12,10 @@ export default async function EmergencyPage({ params }: { params: Promise<{ id: 
 
   const displayName = `${profile.firstName} ${profile.lastName || ''}`.trim()
 
+  const age = profile.dateOfBirth
+    ? Math.floor((Date.now() - new Date(profile.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : null
+
   const bloodDisplay = profile.bloodGroup
     ? profile.bloodGroup.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
     : null
@@ -35,7 +39,7 @@ export default async function EmergencyPage({ params }: { params: Promise<{ id: 
           </div>
           <h2 className="text-2xl font-bold text-ink">{displayName}</h2>
           <div className="flex items-center justify-center gap-3 text-sm text-warm-gray">
-            {profile.dateOfBirth && <span>DOB: {profile.dateOfBirth}</span>}
+            {age && <span>Age: {age} yrs</span>}
             {profile.gender && (
               <>
                 <span className="w-1 h-1 rounded-full bg-warm-gray" />
