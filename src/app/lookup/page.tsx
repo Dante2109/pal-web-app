@@ -580,23 +580,9 @@ function LookupContent() {
 
 function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
   const byType = groupByType(metrics)
-  const critical = getCriticalFindings(metrics)
 
   return (
     <div className="space-y-5">
-      {critical.length > 0 && (
-        <Card className="!bg-red-50 !border-red-200 !p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-bold text-red-700">🚨 Critical Findings ({critical.length})</span>
-          </div>
-          <div className="space-y-0.5">
-            {critical.map(c => (
-              <p key={c.name} className="text-sm text-red-700">• {c.name} {c.arrow}</p>
-            ))}
-          </div>
-        </Card>
-      )}
-
       {byType.map(({ type, display, metrics: groupMetrics }) => {
         const grouped = groupMetricsByName(groupMetrics)
         const alertCount = grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) !== 'normal').length
@@ -697,14 +683,6 @@ function groupMetricsByName(metrics: MedicalMetric[]): { name: string; entries: 
   return Array.from(map.entries()).map(([name, entries]) => {
     const sorted = entries.sort((a, b) => new Date(b.measurementDate).getTime() - new Date(a.measurementDate).getTime())
     return { name, entries: sorted, latest: sorted[0], previous: sorted[1] || null, unit, normalRange }
-  })
-}
-
-function getCriticalFindings(metrics: MedicalMetric[]): { name: string; arrow: string; direction: string }[] {
-  const grouped = groupMetricsByName(metrics)
-  return grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) !== 'normal').map(g => {
-    const flag = getFlag(g.latest.metricValue, g.normalRange)
-    return { name: g.name, arrow: flag === 'high' ? '↑' : '↓', direction: flag === 'high' ? 'High' : 'Low' }
   })
 }
 
