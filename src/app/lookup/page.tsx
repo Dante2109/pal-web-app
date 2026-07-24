@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar } from 'lucide-react'
+import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar, Bot } from 'lucide-react'
 import * as api from '@/lib/api'
 import type { EmergencyProfileResponse } from '@/lib/api'
 
@@ -40,6 +40,8 @@ function LookupContent() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [aiData, setAiData] = useState<Record<string, string> | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -56,6 +58,20 @@ function LookupContent() {
       setSearched(true)
     })
   }, [token])
+
+  useEffect(() => {
+    if (!result?.profileId || !token) { setAiData(null); return }
+    const conditions = result.conditions?.length ? result.conditions : ['General Health Assessment']
+    setAiLoading(true)
+    setAiData(null)
+    Promise.all(conditions.map(c =>
+      api.analyzeProgress(token, result.profileId, c).then(text => ({ condition: c, text }))
+    )).then(results => {
+      const map: Record<string, string> = {}
+      results.forEach(r => { if (r.text) map[r.condition] = r.text })
+      setAiData(Object.keys(map).length ? map : null)
+    }).finally(() => setAiLoading(false))
+  }, [result, token])
 
   async function handleLookup() {
     const id = emergencyId.trim()
@@ -379,6 +395,41 @@ function LookupContent() {
                         <span key={v} className="bg-subtle text-ink px-2.5 py-1 rounded-full text-xs">{v}</span>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {(aiLoading || aiData) && (
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 bg-purple-50 rounded-lg flex items-center justify-center">
+                        <Bot className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <h3 className="font-semibold text-ink text-sm">AI Analysis</h3>
+                      {aiLoading && <span className="w-4 h-4 border-2 border-purple/20 border-t-purple-600 rounded-full animate-spin ml-auto" />}
+                    </div>
+                    {aiLoading && <p className="text-xs text-warm-gray">Analyzing patient data...</p>}
+                    {aiData && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border">
+                              <th className="text-left font-semibold text-ink py-2 pr-4">Condition</th>
+                              <th className="text-left font-semibold text-ink py-2">Analysis</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(aiData).map(([condition, analysis]) => (
+                              <tr key={condition} className="border-b border-border/50 last:border-0">
+                                <td className="py-2.5 pr-4 align-top">
+                                  <span className="inline-block bg-purple-50 text-purple-700 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap">{condition}</span>
+                                </td>
+                                <td className="py-2.5 text-ink text-sm leading-relaxed whitespace-pre-wrap">{analysis}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 )}
 
