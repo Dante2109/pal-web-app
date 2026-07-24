@@ -67,13 +67,12 @@ function LookupContent() {
   useEffect(() => {
     if (!result?.conditions?.length) return
     const t = getTokenFromStorage()
-    if (!t) return
 
     const initial = result.conditions.map(c => ({ condition: c, analysis: '', loading: true }))
     setAiAnalyses(initial)
 
     result.conditions.forEach((condition, idx) => {
-      api.analyzeProgress(t, result.profileId, condition).then(analysis => {
+      api.analyzeProgress(result.profileId, condition, t).then(analysis => {
         setAiAnalyses(prev => {
           const next = [...prev]
           next[idx] = { condition, analysis: analysis || 'No analysis available', loading: false }
