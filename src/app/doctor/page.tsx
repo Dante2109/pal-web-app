@@ -234,9 +234,9 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
     api.getScanHistory(token).then(data => { setScans(data); setLoading(false) }).catch(() => { setError('Unable to load scan history.'); setLoading(false) })
   }, [token])
 
-  function copyId(id: string) {
-    navigator.clipboard.writeText(id)
-    setCopiedId(id)
+  function copyId(scanId: string, profileId: string) {
+    navigator.clipboard.writeText(profileId)
+    setCopiedId(scanId)
     setTimeout(() => setCopiedId(null), 1500)
   }
 
@@ -265,11 +265,11 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
               <p className="text-xs text-warm-gray">{new Date(s.scanTime).toLocaleString()}</p>
             </div>
             <button
-              onClick={() => copyId(s.scannedProfileId)}
+              onClick={() => copyId(s.id, s.scannedProfileId)}
               className="shrink-0 text-xs font-medium transition-colors"
               title="Copy Profile ID"
             >
-              {copiedId === s.scannedProfileId ? (
+              {copiedId === s.id ? (
                 <span className="text-green-600">Copied!</span>
               ) : (
                 <span className="text-teal hover:text-teal/80">Copy ID</span>
