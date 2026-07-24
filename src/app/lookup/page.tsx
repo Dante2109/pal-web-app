@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, ResponsiveContainer } from 'recharts'
+import { Card, Badge, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, LineChart } from '@tremor/react'
 import * as api from '@/lib/api'
 import type { EmergencyProfileResponse, MedicalMetric } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -585,18 +585,16 @@ function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
   return (
     <div className="space-y-5">
       {critical.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+        <Card className="!bg-red-50 !border-red-200 !p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-bold text-red-700">Critical Findings ({critical.length})</span>
+            <span className="text-sm font-bold text-red-700">🚨 Critical Findings ({critical.length})</span>
           </div>
           <div className="space-y-0.5">
             {critical.map(c => (
-              <p key={c.name} className="text-sm text-red-700">
-                {c.arrow} {c.name} {c.direction}
-              </p>
+              <p key={c.name} className="text-sm text-red-700">• {c.name} {c.arrow}</p>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {byType.map(({ type, display, metrics: groupMetrics }) => {
@@ -605,8 +603,8 @@ function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
 
         if (type === 'VITALS') {
           return (
-            <div key={type} className="bg-card border border-border rounded-xl p-4">
-              <h3 className="font-semibold text-ink text-sm mb-3">{display}</h3>
+            <Card key={type} className="!p-4">
+              <h3 className="font-semibold text-gray-900 text-sm mb-3">{display}</h3>
               <div className="space-y-1.5">
                 {grouped.map(g => {
                   const flag = getFlag(g.latest.metricValue, g.normalRange)
@@ -619,49 +617,46 @@ function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
                   )
                 })}
               </div>
-            </div>
+            </Card>
           )
         }
 
         return (
-          <div key={type} className="bg-card border border-border rounded-xl p-4">
-            <h3 className="font-semibold text-ink text-sm mb-3">
+          <Card key={type} className="!p-4">
+            <h3 className="font-semibold text-gray-900 text-sm mb-3">
               {display}
-              {alertCount > 0 && <span className="ml-2 text-xs font-medium text-red-600">{alertCount} Alert{alertCount > 1 ? 's' : ''}</span>}
+              {alertCount > 0 && <Badge className="!bg-red-100 !text-red-700 !text-xs ml-2">{alertCount} Alert{alertCount > 1 ? 's' : ''}</Badge>}
             </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500">Metric</th>
-                    <th className="text-right py-2 pr-4 text-xs font-medium text-gray-500">Previous</th>
-                    <th className="text-right py-2 pr-4 text-xs font-medium text-gray-500">Latest</th>
-                    <th className="text-right py-2 text-xs font-medium text-gray-500">Trend</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {grouped.map(g => {
-                    const flag = getFlag(g.latest.metricValue, g.normalRange)
-                    const trend = g.previous
-                      ? (parseFloat(g.latest.metricValue) > parseFloat(g.previous.metricValue) ? '🔺' : '🔻')
-                      : '—'
-                    return (
-                      <tr key={g.name} className="border-b border-gray-50 last:border-0">
-                        <td className="py-2 pr-4 text-gray-900 font-medium">{g.name}</td>
-                        <td className="py-2 pr-4 text-right text-gray-500">{g.previous ? `${g.previous.metricValue} ${g.unit}` : '—'}</td>
-                        <td className={`py-2 pr-4 text-right font-medium ${
-                          flag === 'high' ? 'text-red-600' : flag === 'low' ? 'text-blue-600' : 'text-gray-900'
-                        }`}>
-                          {g.latest.metricValue} {g.unit}
-                        </td>
-                        <td className="py-2 text-right text-sm">{trend}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell className="!text-xs !text-gray-500 !py-2">Metric</TableHeaderCell>
+                  <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Previous</TableHeaderCell>
+                  <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Latest</TableHeaderCell>
+                  <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Trend</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {grouped.map(g => {
+                  const flag = getFlag(g.latest.metricValue, g.normalRange)
+                  const trend = g.previous
+                    ? (parseFloat(g.latest.metricValue) > parseFloat(g.previous.metricValue) ? '🔺' : '🔻')
+                    : '—'
+                  const color = flag === 'high' ? 'text-red-600' : flag === 'low' ? 'text-blue-600' : ''
+                  return (
+                    <TableRow key={g.name}>
+                      <TableCell className="!py-2 !text-gray-900 !font-medium">{g.name}</TableCell>
+                      <TableCell className="!py-2 !text-right !text-gray-500">{g.previous ? `${g.previous.metricValue} ${g.unit}` : '—'}</TableCell>
+                      <TableCell className={`!py-2 !text-right !font-medium ${color || '!text-gray-900'}`}>
+                        {g.latest.metricValue} {g.unit}
+                      </TableCell>
+                      <TableCell className="!py-2 !text-right">{trend}</TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </Card>
         )
       })}
     </div>
