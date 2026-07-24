@@ -417,16 +417,27 @@ export async function createDoctor(token: string, data: Partial<Doctor>): Promis
   return doctor
 }
 
-// ---------- AI ----------
+// ---------- Medical Data ----------
 
-export async function getMedicalData(profileId: string, token?: string | null): Promise<string | null> {
+export interface MedicalMetric {
+  id: string
+  metricType: string
+  metricName: string
+  metricValue: string
+  unit: string
+  normalRange: string
+  trendStatus: string
+  measurementDate: string
+}
+
+export async function getMedicalData(profileId: string, token?: string | null): Promise<MedicalMetric[] | null> {
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
   const res = await fetch(`${BASE_URL}/api/v1/medical-data/${profileId}`, { headers })
   if (!res.ok) return null
   const json = await res.json()
   if (!json.data || (Array.isArray(json.data) && json.data.length === 0)) return null
-  return typeof json.data === 'string' ? json.data : JSON.stringify(json.data)
+  return json.data as MedicalMetric[]
 }
 
 export async function chatWithEmergencyProfile(emergencyId: string, question: string): Promise<string | null> {

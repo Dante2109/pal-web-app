@@ -3,9 +3,9 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar, Brain } from 'lucide-react'
+import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import * as api from '@/lib/api'
-import type { EmergencyProfileResponse } from '@/lib/api'
+import type { EmergencyProfileResponse, MedicalMetric } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 
 function formatBlood(bg: string | undefined | null) {
@@ -39,7 +39,8 @@ function LookupContent() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [downloading, setDownloading] = useState(false)
-  const [aiAnalyses, setAiAnalyses] = useState<{ condition: string; analysis: string; loading: boolean }[]>([])
+  const [medicalMetrics, setMedicalMetrics] = useState<MedicalMetric[] | null>(null)
+  const [metricsLoading, setMetricsLoading] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
   const { token } = useAuth()
 
@@ -67,36 +68,16 @@ function LookupContent() {
   useEffect(() => {
     if (!result?.profileId) return
     const t = getTokenFromStorage()
-
-    if (result.conditions?.length) {
-      const initial = result.conditions.map(c => ({ condition: c, analysis: '', loading: true }))
-      setAiAnalyses(initial)
-      result.conditions.forEach((condition, idx) => {
-        api.getMedicalData(result.profileId, t).then(analysis => {
-          setAiAnalyses(prev => {
-            const next = [...prev]
-            next[idx] = { condition, analysis: analysis || 'No analysis available', loading: false }
-            return next
-          })
-        }).catch(() => {
-          setAiAnalyses(prev => {
-            const next = [...prev]
-            next[idx] = { condition, analysis: 'Failed to load analysis', loading: false }
-            return next
-          })
-        })
-      })
-    } else {
-      api.getMedicalData(result.profileId, t).then(analysis => {
-        if (analysis) setAiAnalyses([{ condition: 'General', analysis, loading: false }])
-      })
-    }
+    setMetricsLoading(true)
+    api.getMedicalData(result.profileId, t).then(data => {
+      setMedicalMetrics(data)
+    }).catch(() => {}).finally(() => setMetricsLoading(false))
   }, [result])
 
   async function handleLookup() {
     const id = emergencyId.trim()
     if (!id) return
-    setLoading(true); setError(''); setResult(null); setSearched(true); setAiAnalyses([])
+    setLoading(true); setError(''); setResult(null); setSearched(true); setMedicalMetrics(null)
     try {
       const t = getTokenFromStorage()
       const data = await api.getEmergencyProfile(id, t)
@@ -419,43 +400,42 @@ function LookupContent() {
                   </div>
                 )}
 
-                {aiAnalyses.some(a => !a.loading && a.analysis !== 'No analysis available') && (
-                  <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 bg-violet-50 rounded-lg flex items-center justify-center">
-                        <Brain className="w-4 h-4 text-violet-600" />
-                      </div>
-                      <h3 className="font-semibold text-ink text-sm">AI Analysis</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border">
-                            <th className="text-left py-2 pr-4 font-semibold text-warm-gray text-xs uppercase tracking-wider">Condition</th>
-                            <th className="text-left py-2 font-semibold text-warm-gray text-xs uppercase tracking-wider">Analysis</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {aiAnalyses.filter(a => !a.loading && a.analysis !== 'No analysis available').map(a => (
-                            <tr key={a.condition} className="border-b border-border/50 last:border-0">
-                              <td className="py-2.5 pr-4 align-top">
-                                <span className="font-medium text-ink">{a.condition}</span>
-                              </td>
-                              <td className="py-2.5 align-top">
-                                {a.loading ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-3.5 h-3.5 border-2 border-violet/20 border-t-violet rounded-full animate-spin" />
-                                    <span className="text-warm-gray text-xs">Analyzing...</span>
+                {metricsLoading && (
+                  <div className="text-center py-4">
+                    <span className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin inline-block" />
+                  </div>
+                )}
+                {medicalMetrics && medicalMetrics.length > 0 && (
+                  <div className="space-y-4">
+                    {groupBy(medicalMetrics, 'metricType').map(([type, metrics]) => (
+                      <div key={type} className="bg-card border border-border rounded-xl p-4">
+                        <h3 className="font-semibold text-ink text-sm mb-3 capitalize">{type.replace(/_/g, ' ').toLowerCase()}</h3>
+                        <div className="space-y-1">
+                          {metrics.map(m => {
+                            const flag = getFlag(m.metricValue, m.normalRange)
+                            return (
+                              <div key={m.id} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a' }} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-baseline justify-between gap-2">
+                                    <span className="text-sm font-medium text-gray-900 truncate">{m.metricName}</span>
+                                    <span className={`text-sm font-semibold shrink-0 ${flag === 'high' ? 'text-red-600' : flag === 'low' ? 'text-blue-600' : 'text-green-600'}`}>
+                                      {m.metricValue}
+                                    </span>
                                   </div>
-                                ) : (
-                                  <span className="text-warm-gray whitespace-pre-wrap">{a.analysis}</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                    <span>{m.unit}</span>
+                                    <span className="text-gray-300">|</span>
+                                    <span>Range: {m.normalRange}</span>
+                                    <TrendBadge status={m.trendStatus} />
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -625,4 +605,37 @@ function LookupContent() {
       </div>
     </div>
   )
+}
+
+function getFlag(value: string, normalRange: string): 'high' | 'low' | 'normal' {
+  const v = parseFloat(value)
+  if (isNaN(v)) return 'normal'
+  const parts = normalRange.replace(/[<>=]/g, '').split('-').map(s => parseFloat(s.trim()))
+  if (parts.length === 1 && !isNaN(parts[0])) {
+    if (normalRange.includes('<')) return v < parts[0] ? 'normal' : 'high'
+    if (normalRange.includes('>')) return v > parts[0] ? 'normal' : 'low'
+  }
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    if (v < parts[0]) return 'low'
+    if (v > parts[1]) return 'high'
+    return 'normal'
+  }
+  return 'normal'
+}
+
+function groupBy<T>(arr: T[], key: keyof T): [string, T[]][] {
+  const map: Record<string, T[]> = {}
+  arr.forEach(item => {
+    const k = String(item[key])
+    if (!map[k]) map[k] = []
+    map[k].push(item)
+  })
+  return Object.entries(map)
+}
+
+function TrendBadge({ status }: { status: string }) {
+  if (status === 'IMPROVING') return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600"><TrendingUp className="w-3.5 h-3.5" /> Improving</span>
+  if (status === 'DETERIORATING') return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600"><TrendingDown className="w-3.5 h-3.5" /> Deteriorating</span>
+  if (status === 'STABLE') return <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600"><Minus className="w-3.5 h-3.5" /> Stable</span>
+  return <span className="text-xs text-warm-gray">Unknown</span>
 }
