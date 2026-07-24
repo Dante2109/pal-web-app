@@ -84,10 +84,8 @@ export interface EmergencyProfileResponse {
   emergencyId: string
 }
 
-export async function getEmergencyProfile(emergencyId: string, token?: string | null): Promise<EmergencyProfileResponse | null> {
-  const headers: Record<string, string> = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${BASE_URL}/api/v1/emergency/${emergencyId}`, { cache: 'no-store', headers })
+export async function getEmergencyProfile(emergencyId: string): Promise<EmergencyProfileResponse | null> {
+  const res = await fetch(`${BASE_URL}/api/v1/emergency/${emergencyId}`, { cache: 'no-store' })
   if (!res.ok) return null
   return res.json()
 }
@@ -162,17 +160,15 @@ export interface ScanHistory {
   id: string
   doctorAccountId: string
   scannedProfileId: string
-  scannedProfileName:string
   scanTime: string
 }
 
-export async function getScanHistory(token: string): Promise<ScanHistory[]> {
-  const res = await fetch(`${BASE_URL}/api/v1/emergency/scan-history`, {
+export async function getScanHistory(token: string, limit = 10): Promise<ScanHistory[]> {
+  const res = await fetch(`${BASE_URL}/api/v1/hospital/scanned-history?limit=${limit}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) return []
-  const json = await res.json()
-  return json.data || json
+  return res.json()
 }
 
 export interface PatientSearchResult {
@@ -410,11 +406,8 @@ export async function createDoctor(token: string, data: Partial<Doctor>): Promis
 
 // ---------- AI ----------
 
-export async function analyzeProgress(token: string, profileId: string, condition?: string): Promise<string | null> {
-  const url = condition
-    ? `${BASE_URL}/api/v1/ai/analyze/${profileId}?condition=${encodeURIComponent(condition)}`
-    : `${BASE_URL}/api/v1/ai/analyze/${profileId}`
-  const res = await fetch(url, {
+export async function analyzeProgress(token: string, profileId: string, condition: string): Promise<string | null> {
+  const res = await fetch(`${BASE_URL}/api/v1/ai/analyze/${profileId}?condition=${encodeURIComponent(condition)}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) return null
