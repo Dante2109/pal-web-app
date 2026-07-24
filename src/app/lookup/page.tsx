@@ -410,25 +410,42 @@ function LookupContent() {
                     {groupBy(medicalMetrics, 'metricType').map(([type, metrics]) => (
                       <div key={type} className="bg-card border border-border rounded-xl p-4">
                         <h3 className="font-semibold text-ink text-sm mb-3 capitalize">{type.replace(/_/g, ' ').toLowerCase()}</h3>
-                        <div className="space-y-1">
+                        <div className="space-y-3">
                           {metrics.map(m => {
                             const flag = getFlag(m.metricValue, m.normalRange)
+                            const range = parseRange(m.normalRange)
                             return (
-                              <div key={m.id} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
-                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a' }} />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-baseline justify-between gap-2">
+                              <div key={m.id}>
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div className="flex items-center gap-2 min-w-0">
                                     <span className="text-sm font-medium text-gray-900 truncate">{m.metricName}</span>
-                                    <span className={`text-sm font-semibold shrink-0 ${flag === 'high' ? 'text-red-600' : flag === 'low' ? 'text-blue-600' : 'text-green-600'}`}>
-                                      {m.metricValue}
-                                    </span>
+                                    {m.trendStatus !== 'UNKNOWN' && <TrendIcon status={m.trendStatus} />}
                                   </div>
-                                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                    <span>{m.unit}</span>
-                                    <span className="text-gray-300">|</span>
-                                    <span>Range: {m.normalRange}</span>
-                                    <TrendBadge status={m.trendStatus} />
+                                  <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                                    flag === 'high' ? 'bg-red-100 text-red-700' :
+                                    flag === 'low' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-green-100 text-green-700'
+                                  }`}>
+                                    {m.metricValue} {m.unit}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full relative overflow-hidden">
+                                    {range && (
+                                      <div className="absolute inset-y-0 rounded-full bg-green-200" style={{
+                                        left: `${range.normalStart}%`,
+                                        width: `${range.normalEnd - range.normalStart}%`,
+                                      }} />
+                                    )}
+                                    {range && (
+                                      <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-white shadow-sm" style={{
+                                        left: `${range.valuePct}%`,
+                                        backgroundColor: flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a',
+                                        transform: 'translate(-50%, -50%)',
+                                      }} />
+                                    )}
                                   </div>
+                                  <span className="text-[10px] text-gray-400 shrink-0 w-14 text-right">{m.normalRange}</span>
                                 </div>
                               </div>
                             )
@@ -633,9 +650,36 @@ function groupBy<T>(arr: T[], key: keyof T): [string, T[]][] {
   return Object.entries(map)
 }
 
-function TrendBadge({ status }: { status: string }) {
-  if (status === 'IMPROVING') return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600"><TrendingUp className="w-3.5 h-3.5" /> Improving</span>
-  if (status === 'DETERIORATING') return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600"><TrendingDown className="w-3.5 h-3.5" /> Deteriorating</span>
-  if (status === 'STABLE') return <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600"><Minus className="w-3.5 h-3.5" /> Stable</span>
-  return <span className="text-xs text-warm-gray">Unknown</span>
+function parseRange(normalRange: string): { normalStart: number; normalEnd: number; valuePct: number } | null {
+  const parts = normalRange.replace(/[<>=]/g, '').split('-').map(s => parseFloat(s.trim()))
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] < parts[1]) {
+    const margin = (parts[1] - parts[0]) * 0.5
+    const min = parts[0] - margin
+    const max = parts[1] + margin
+    return {
+      normalStart: ((parts[0] - min) / (max - min)) * 100,
+      normalEnd: ((parts[1] - min) / (max - min)) * 100,
+      valuePct: 50,
+    }
+  }
+  return null
+}
+
+function TrendIcon({ status }: { status: string }) {
+  if (status === 'IMPROVING') return (
+    <svg width="20" height="12" viewBox="0 0 20 12" fill="none" className="shrink-0">
+      <path d="M0 10 L5 6 L10 8 L15 2 L20 4" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  )
+  if (status === 'DETERIORATING') return (
+    <svg width="20" height="12" viewBox="0 0 20 12" fill="none" className="shrink-0">
+      <path d="M0 2 L5 6 L10 4 L15 10 L20 8" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  )
+  if (status === 'STABLE') return (
+    <svg width="20" height="12" viewBox="0 0 20 12" fill="none" className="shrink-0">
+      <path d="M0 6 L7 6 L13 6 L20 6" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+    </svg>
+  )
+  return null
 }
