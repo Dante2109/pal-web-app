@@ -199,10 +199,17 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
             <div className="w-8 h-8 bg-teal-light rounded-lg flex items-center justify-center text-teal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-ink font-medium font-mono">{s.scannedProfileId}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-ink font-medium truncate">{s.scannedProfileName || s.scannedProfileId}</p>
               <p className="text-xs text-warm-gray">{new Date(s.scanTime).toLocaleString()}</p>
             </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(s.scannedProfileId)}
+              className="shrink-0 text-xs text-teal font-medium hover:text-teal/80 transition-colors"
+              title="Copy Profile ID"
+            >
+              Copy ID
+            </button>
           </div>
         ))}
       </div>

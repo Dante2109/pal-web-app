@@ -162,6 +162,7 @@ export interface ScanHistory {
   id: string
   doctorAccountId: string
   scannedProfileId: string
+  scannedProfileName:string
   scanTime: string
 }
 
