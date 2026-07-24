@@ -410,8 +410,11 @@ export async function createDoctor(token: string, data: Partial<Doctor>): Promis
 
 // ---------- AI ----------
 
-export async function analyzeProgress(token: string, profileId: string, condition: string): Promise<string | null> {
-  const res = await fetch(`${BASE_URL}/api/v1/ai/analyze/${profileId}?condition=${encodeURIComponent(condition)}`, {
+export async function analyzeProgress(token: string, profileId: string, condition?: string): Promise<string | null> {
+  const url = condition
+    ? `${BASE_URL}/api/v1/ai/analyze/${profileId}?condition=${encodeURIComponent(condition)}`
+    : `${BASE_URL}/api/v1/ai/analyze/${profileId}`
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) return null

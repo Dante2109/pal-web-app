@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import AuthGuard from '@/components/AuthGuard'
 import DashboardSidebar from '@/components/DashboardSidebar'
-import { Search } from 'lucide-react'
+import { Search, Bot } from 'lucide-react'
 import * as api from '@/lib/api'
 import type { ProfileResponse } from '@/lib/api'
 
@@ -161,13 +161,23 @@ function PatientLookup({ token }: { token: string | null }) {
   const [result, setResult] = useState<api.EmergencyProfileResponse | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [aiData, setAiData] = useState<Record<string, string> | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
 
   async function handleLookup() {
     if (!emergencyId.trim()) return
-    setLoading(true); setError(''); setResult(null)
+    setLoading(true); setError(''); setResult(null); setAiData(null)
     try {
       const data = await api.getEmergencyProfile(emergencyId.trim(), token)
-      if (data) setResult(data)
+      if (data) {
+        setResult(data)
+        if (data.profileId && token) {
+          setAiLoading(true)
+          api.analyzeProgress(token, data.profileId).then(text => {
+            if (text) setAiData({ 'Overall Assessment': text })
+          }).finally(() => setAiLoading(false))
+        }
+      }
       else setError('No patient found with that Emergency ID')
     } catch { setError('Network error') }
     finally { setLoading(false) }
@@ -213,6 +223,16 @@ function PatientLookup({ token }: { token: string | null }) {
             </div>
           )}
           {(result.conditions?.length ?? 0) > 0 && <p className="text-xs text-ink"><span className="font-medium">Conditions:</span> {result.conditions!.join(', ')}</p>}
+          {(aiLoading || aiData) && (
+            <div className="bg-white border border-purple-200 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Bot className="w-3.5 h-3.5 text-purple-600" />
+                <span className="text-xs font-semibold text-purple-700">AI Analysis</span>
+                {aiLoading && <span className="w-3 h-3 border-2 border-purple/20 border-t-purple-600 rounded-full animate-spin ml-auto" />}
+              </div>
+              {aiData && <p className="text-xs text-ink leading-relaxed">{Object.values(aiData)[0]}</p>}
+            </div>
+          )}
           <div className="flex gap-2 pt-1">
             <Link href={`/emergency/${result.emergencyId}`} className="text-xs text-teal font-semibold hover:underline">View full profile →</Link>
             <Link href={`/qr/${result.profileId}`} className="text-xs text-teal font-semibold hover:underline">QR Code →</Link>
