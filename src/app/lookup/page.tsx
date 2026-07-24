@@ -407,52 +407,24 @@ function LookupContent() {
                 )}
                 {medicalMetrics && medicalMetrics.length > 0 && (
                   <div className="space-y-4">
-                    {groupBy(medicalMetrics, 'metricType').map(([type, metrics]) => (
-                      <div key={type} className="bg-card border border-border rounded-xl p-4">
-                        <h3 className="font-semibold text-ink text-sm mb-3 capitalize">{type.replace(/_/g, ' ').toLowerCase()}</h3>
-                        <div className="space-y-3">
-                          {metrics.map(m => {
-                            const flag = getFlag(m.metricValue, m.normalRange)
-                            const range = parseRange(m.normalRange)
-                            return (
-                              <div key={m.id}>
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-sm font-medium text-gray-900 truncate">{m.metricName}</span>
-                                    {m.trendStatus !== 'UNKNOWN' && <TrendIcon status={m.trendStatus} />}
-                                  </div>
-                                  <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
-                                    flag === 'high' ? 'bg-red-100 text-red-700' :
-                                    flag === 'low' ? 'bg-blue-100 text-blue-700' :
-                                    'bg-green-100 text-green-700'
-                                  }`}>
-                                    {m.metricValue} {m.unit}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full relative overflow-hidden">
-                                    {range && (
-                                      <div className="absolute inset-y-0 rounded-full bg-green-200" style={{
-                                        left: `${range.normalStart}%`,
-                                        width: `${range.normalEnd - range.normalStart}%`,
-                                      }} />
-                                    )}
-                                    {range && (
-                                      <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-white shadow-sm" style={{
-                                        left: `${range.valuePct}%`,
-                                        backgroundColor: flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a',
-                                        transform: 'translate(-50%, -50%)',
-                                      }} />
-                                    )}
-                                  </div>
-                                  <span className="text-[10px] text-gray-400 shrink-0 w-14 text-right">{m.normalRange}</span>
-                                </div>
-                              </div>
-                            )
-                          })}
+                    {groupBy(medicalMetrics, 'metricType').map(([type, metrics]) => {
+                      const grouped = groupByNameAndDate(metrics)
+                      return (
+                        <div key={type} className="bg-card border border-border rounded-xl p-4">
+                          <h3 className="font-semibold text-ink text-sm mb-3 capitalize">{type.replace(/_/g, ' ').toLowerCase()}</h3>
+                          <div className="space-y-4">
+                            {grouped.map(({ name, entries, unit, normalRange }) => {
+                              if (entries.length === 1) {
+                                const m = entries[0]
+                                const flag = getFlag(m.metricValue, normalRange)
+                                return <SingleMetricRow key={name} metric={m} flag={flag} unit={unit} normalRange={normalRange} />
+                              }
+                              return <MultiMetricChart key={name} name={name} entries={entries} unit={unit} normalRange={normalRange} />
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
 
@@ -682,4 +654,112 @@ function TrendIcon({ status }: { status: string }) {
     </svg>
   )
   return null
+}
+
+function groupByNameAndDate(metrics: MedicalMetric[]): { name: string; entries: MedicalMetric[]; unit: string; normalRange: string }[] {
+  const map = new Map<string, MedicalMetric[]>()
+  let unit = ''
+  let normalRange = ''
+  metrics.forEach(m => {
+    const list = map.get(m.metricName) || []
+    list.push(m)
+    map.set(m.metricName, list)
+    unit = m.unit
+    normalRange = m.normalRange
+  })
+  return Array.from(map.entries()).map(([name, entries]) => ({
+    name,
+    entries: entries.sort((a, b) => new Date(a.measurementDate).getTime() - new Date(b.measurementDate).getTime()),
+    unit,
+    normalRange,
+  }))
+}
+
+function SingleMetricRow({ metric, flag, unit, normalRange }: { metric: MedicalMetric; flag: string; unit: string; normalRange: string }) {
+  const range = parseRange(normalRange)
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium text-gray-900 truncate">{metric.metricName}</span>
+          {metric.trendStatus !== 'UNKNOWN' && <TrendIcon status={metric.trendStatus} />}
+        </div>
+        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+          flag === 'high' ? 'bg-red-100 text-red-700' :
+          flag === 'low' ? 'bg-blue-100 text-blue-700' :
+          'bg-green-100 text-green-700'
+        }`}>
+          {metric.metricValue} {unit}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-gray-100 rounded-full relative overflow-hidden">
+          {range && (
+            <div className="absolute inset-y-0 rounded-full bg-green-200" style={{
+              left: `${range.normalStart}%`,
+              width: `${range.normalEnd - range.normalStart}%`,
+            }} />
+          )}
+          {range && (
+            <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-white shadow-sm" style={{
+              left: `${range.valuePct}%`,
+              backgroundColor: flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a',
+              transform: 'translate(-50%, -50%)',
+            }} />
+          )}
+        </div>
+        <span className="text-[10px] text-gray-400 shrink-0 w-14 text-right">{normalRange}</span>
+      </div>
+    </div>
+  )
+}
+
+function MultiMetricChart({ name, entries, unit, normalRange }: { name: string; entries: MedicalMetric[]; unit: string; normalRange: string }) {
+  const values = entries.map(e => parseFloat(e.metricValue)).filter(v => !isNaN(v))
+  if (values.length === 0) return null
+
+  const min = Math.min(...values) * 0.85
+  const max = Math.max(...values) * 1.15
+  const range_span = max - min || 1
+
+  const parts = normalRange.replace(/[<>=]/g, '').split('-').map(s => parseFloat(s.trim()))
+  const normalLow = parts.length === 2 ? parts[0] : null
+  const normalHigh = parts.length === 2 ? parts[1] : null
+
+  const w = entries.length * 50
+  const h = 100
+  const pad = { top: 10, bottom: 20, left: 10, right: 10 }
+  const cw = w - pad.left - pad.right
+  const ch = h - pad.top - pad.bottom
+
+  function x(i: number) { return pad.left + (i / (entries.length - 1 || 1)) * cw }
+  function y(v: number) { return pad.top + ch - ((v - min) / range_span) * ch }
+
+  const linePath = entries.map((e, i) => `${i === 0 ? 'M' : 'L'}${x(i)} ${y(parseFloat(e.metricValue))}`).join(' ')
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm font-medium text-gray-900">{name}</span>
+        <span className="text-[10px] text-gray-400">Range: {normalRange} {unit}</span>
+      </div>
+      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+        {normalLow !== null && normalHigh !== null && (
+          <rect x={pad.left} y={y(normalHigh)} width={cw} height={y(normalLow) - y(normalHigh)} fill="#dcfce7" rx="2" />
+        )}
+        <path d={linePath} stroke="#6b7280" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+        {entries.map((e, i) => {
+          const v = parseFloat(e.metricValue)
+          const flag = getFlag(e.metricValue, normalRange)
+          return (
+            <g key={e.id}>
+              <circle cx={x(i)} cy={y(v)} r="3.5" fill={flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a'} stroke="white" strokeWidth="1.5" />
+              <text x={x(i)} y={y(v) - 8} textAnchor="middle" fontSize="9" fill="#374151" fontWeight="600">{e.metricValue}</text>
+              <text x={x(i)} y={h - 4} textAnchor="middle" fontSize="7" fill="#9ca3af">{e.measurementDate.slice(5)}</text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
 }
