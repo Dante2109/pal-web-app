@@ -65,27 +65,32 @@ function LookupContent() {
   }, [])
 
   useEffect(() => {
-    if (!result?.conditions?.length) return
+    if (!result?.profileId) return
     const t = getTokenFromStorage()
 
-    const initial = result.conditions.map(c => ({ condition: c, analysis: '', loading: true }))
-    setAiAnalyses(initial)
-
-    result.conditions.forEach((condition, idx) => {
-      api.getMedicalData(result.profileId, t).then(analysis => {
-        setAiAnalyses(prev => {
-          const next = [...prev]
-          next[idx] = { condition, analysis: analysis || 'No analysis available', loading: false }
-          return next
-        })
-      }).catch(() => {
-        setAiAnalyses(prev => {
-          const next = [...prev]
-          next[idx] = { condition, analysis: 'Failed to load analysis', loading: false }
-          return next
+    if (result.conditions?.length) {
+      const initial = result.conditions.map(c => ({ condition: c, analysis: '', loading: true }))
+      setAiAnalyses(initial)
+      result.conditions.forEach((condition, idx) => {
+        api.getMedicalData(result.profileId, t).then(analysis => {
+          setAiAnalyses(prev => {
+            const next = [...prev]
+            next[idx] = { condition, analysis: analysis || 'No analysis available', loading: false }
+            return next
+          })
+        }).catch(() => {
+          setAiAnalyses(prev => {
+            const next = [...prev]
+            next[idx] = { condition, analysis: 'Failed to load analysis', loading: false }
+            return next
+          })
         })
       })
-    })
+    } else {
+      api.getMedicalData(result.profileId, t).then(analysis => {
+        if (analysis) setAiAnalyses([{ condition: 'General', analysis, loading: false }])
+      })
+    }
   }, [result])
 
   async function handleLookup() {
