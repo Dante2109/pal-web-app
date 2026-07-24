@@ -433,7 +433,7 @@ export interface MedicalMetric {
 export async function getMedicalData(profileId: string, token?: string | null): Promise<MedicalMetric[] | null> {
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${BASE_URL}/api/v1/ai/analyze/${profileId}`, { headers })
+  const res = await fetch(`${BASE_URL}/api/v1/medical-data/${profileId}`, { headers })
   if (!res.ok) return null
   const json = await res.json()
   if (!json.data || (Array.isArray(json.data) && json.data.length === 0)) return null
