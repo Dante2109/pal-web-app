@@ -218,7 +218,7 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
               {copiedId === s.id ? (
                 <span className="text-green-600">Copied!</span>
               ) : (
-                <span className="text-teal hover:text-teal/80">Copy ID</span>
+                <span className="text-teal hover:text-teal/80">Copy Profile ID</span>
               )}
             </button>
           </div>
