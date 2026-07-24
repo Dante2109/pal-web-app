@@ -227,11 +227,18 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
   const [scans, setScans] = useState<api.ScanHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) return
     api.getScanHistory(token).then(data => { setScans(data); setLoading(false) }).catch(() => { setError('Unable to load scan history.'); setLoading(false) })
   }, [token])
+
+  function copyId(id: string) {
+    navigator.clipboard.writeText(id)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }
 
   if (loading) return <div className="bg-card border border-border rounded-xl p-8 text-center"><p className="text-sm text-warm-gray">Loading scan history...</p></div>
 
@@ -258,11 +265,15 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
               <p className="text-xs text-warm-gray">{new Date(s.scanTime).toLocaleString()}</p>
             </div>
             <button
-              onClick={() => navigator.clipboard.writeText(s.scannedProfileId)}
-              className="shrink-0 text-xs text-teal font-medium hover:text-teal/80 transition-colors"
+              onClick={() => copyId(s.scannedProfileId)}
+              className="shrink-0 text-xs font-medium transition-colors"
               title="Copy Profile ID"
             >
-              Copy ID
+              {copiedId === s.scannedProfileId ? (
+                <span className="text-green-600">Copied!</span>
+              ) : (
+                <span className="text-teal hover:text-teal/80">Copy ID</span>
+              )}
             </button>
           </div>
         ))}
