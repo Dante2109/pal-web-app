@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, ResponsiveContainer } from 'recharts'
 import * as api from '@/lib/api'
 import type { EmergencyProfileResponse, MedicalMetric } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -718,48 +719,43 @@ function MultiMetricChart({ name, entries, unit, normalRange }: { name: string; 
   const values = entries.map(e => parseFloat(e.metricValue)).filter(v => !isNaN(v))
   if (values.length === 0) return null
 
-  const min = Math.min(...values) * 0.85
-  const max = Math.max(...values) * 1.15
-  const range_span = max - min || 1
-
   const parts = normalRange.replace(/[<>=]/g, '').split('-').map(s => parseFloat(s.trim()))
   const normalLow = parts.length === 2 ? parts[0] : null
   const normalHigh = parts.length === 2 ? parts[1] : null
 
-  const w = entries.length * 50
-  const h = 100
-  const pad = { top: 10, bottom: 20, left: 10, right: 10 }
-  const cw = w - pad.left - pad.right
-  const ch = h - pad.top - pad.bottom
-
-  function x(i: number) { return pad.left + (i / (entries.length - 1 || 1)) * cw }
-  function y(v: number) { return pad.top + ch - ((v - min) / range_span) * ch }
-
-  const linePath = entries.map((e, i) => `${i === 0 ? 'M' : 'L'}${x(i)} ${y(parseFloat(e.metricValue))}`).join(' ')
+  const data = entries.map(e => ({
+    date: e.measurementDate.slice(5),
+    value: parseFloat(e.metricValue),
+    raw: e.metricValue,
+    flag: getFlag(e.metricValue, normalRange),
+  }))
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-900">{name}</span>
         <span className="text-[10px] text-gray-400">Range: {normalRange} {unit}</span>
       </div>
-      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
-        {normalLow !== null && normalHigh !== null && (
-          <rect x={pad.left} y={y(normalHigh)} width={cw} height={y(normalLow) - y(normalHigh)} fill="#dcfce7" rx="2" />
-        )}
-        <path d={linePath} stroke="#6b7280" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
-        {entries.map((e, i) => {
-          const v = parseFloat(e.metricValue)
-          const flag = getFlag(e.metricValue, normalRange)
-          return (
-            <g key={e.id}>
-              <circle cx={x(i)} cy={y(v)} r="3.5" fill={flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a'} stroke="white" strokeWidth="1.5" />
-              <text x={x(i)} y={y(v) - 8} textAnchor="middle" fontSize="9" fill="#374151" fontWeight="600">{e.metricValue}</text>
-              <text x={x(i)} y={h - 4} textAnchor="middle" fontSize="7" fill="#9ca3af">{e.measurementDate.slice(5)}</text>
-            </g>
-          )
-        })}
-      </svg>
+      <div className="bg-gray-50 rounded-lg p-2">
+        <ResponsiveContainer width="100%" height={140}>
+          <LineChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+            {normalLow !== null && normalHigh !== null && (
+              <ReferenceArea y1={normalLow} y2={normalHigh} fill="#dcfce7" fillOpacity={0.6} />
+            )}
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+            <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#6b7280"
+              strokeWidth={1.5}
+              dot={{ r: 4, strokeWidth: 1.5, stroke: '#fff', fill: '#6b7280' }}
+              activeDot={{ r: 5, strokeWidth: 0, fill: '#111827' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }
