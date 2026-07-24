@@ -84,8 +84,10 @@ export interface EmergencyProfileResponse {
   emergencyId: string
 }
 
-export async function getEmergencyProfile(emergencyId: string): Promise<EmergencyProfileResponse | null> {
-  const res = await fetch(`${BASE_URL}/api/v1/emergency/${emergencyId}`, { cache: 'no-store' })
+export async function getEmergencyProfile(emergencyId: string, token?: string): Promise<EmergencyProfileResponse | null> {
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(`${BASE_URL}/api/v1/emergency/${emergencyId}`, { cache: 'no-store', headers })
   if (!res.ok) return null
   return res.json()
 }
@@ -158,8 +160,8 @@ export async function getProfileRecords(token: string, profileId: string): Promi
 
 export interface ScanHistory {
   id: string
-  doctorAccountId: string
   scannedProfileId: string
+  scannedProfileName?: string
   scanTime: string
 }
 
@@ -406,8 +408,11 @@ export async function createDoctor(token: string, data: Partial<Doctor>): Promis
 
 // ---------- AI ----------
 
-export async function analyzeProgress(token: string, profileId: string, condition: string): Promise<string | null> {
-  const res = await fetch(`${BASE_URL}/api/v1/ai/analyze/${profileId}?condition=${encodeURIComponent(condition)}`, {
+export async function analyzeProgress(token: string, profileId: string, condition?: string): Promise<string | null> {
+  const url = condition
+    ? `${BASE_URL}/api/v1/ai/analyze/${profileId}?condition=${encodeURIComponent(condition)}`
+    : `${BASE_URL}/api/v1/ai/analyze/${profileId}`
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) return null

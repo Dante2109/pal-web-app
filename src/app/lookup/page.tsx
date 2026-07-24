@@ -3,9 +3,10 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar } from 'lucide-react'
+import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar, Brain } from 'lucide-react'
 import * as api from '@/lib/api'
 import type { EmergencyProfileResponse } from '@/lib/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 function formatBlood(bg: string | undefined | null) {
   if (!bg) return null
@@ -38,13 +39,21 @@ function LookupContent() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [aiAnalyses, setAiAnalyses] = useState<{ condition: string; analysis: string; loading: boolean }[]>([])
   const reportRef = useRef<HTMLDivElement>(null)
+  const { token } = useAuth()
+
+  function getTokenFromStorage(): string | undefined {
+    if (token) return token
+    return undefined
+  }
 
   useEffect(() => {
     const id = searchParams.get('emergencyId')
     if (!id) return
     setLoading(true)
-    api.getEmergencyProfile(id).then(data => {
+    const t = getTokenFromStorage()
+    api.getEmergencyProfile(id, t).then(data => {
       if (data) setResult(data)
       else setError('No patient found with that Emergency ID.')
     }).catch(() => {
@@ -55,12 +64,38 @@ function LookupContent() {
     })
   }, [])
 
+  useEffect(() => {
+    if (!result?.conditions?.length) return
+    const t = getTokenFromStorage()
+    if (!t) return
+
+    const initial = result.conditions.map(c => ({ condition: c, analysis: '', loading: true }))
+    setAiAnalyses(initial)
+
+    result.conditions.forEach((condition, idx) => {
+      api.analyzeProgress(t, result.profileId, condition).then(analysis => {
+        setAiAnalyses(prev => {
+          const next = [...prev]
+          next[idx] = { condition, analysis: analysis || 'No analysis available', loading: false }
+          return next
+        })
+      }).catch(() => {
+        setAiAnalyses(prev => {
+          const next = [...prev]
+          next[idx] = { condition, analysis: 'Failed to load analysis', loading: false }
+          return next
+        })
+      })
+    })
+  }, [result])
+
   async function handleLookup() {
     const id = emergencyId.trim()
     if (!id) return
-    setLoading(true); setError(''); setResult(null); setSearched(true)
+    setLoading(true); setError(''); setResult(null); setSearched(true); setAiAnalyses([])
     try {
-      const data = await api.getEmergencyProfile(id)
+      const t = getTokenFromStorage()
+      const data = await api.getEmergencyProfile(id, t)
       if (data) setResult(data)
       else setError('No patient found with that Emergency ID.')
     } catch {
@@ -376,6 +411,46 @@ function LookupContent() {
                       {result.vaccinations.map(v => (
                         <span key={v} className="bg-subtle text-ink px-2.5 py-1 rounded-full text-xs">{v}</span>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {aiAnalyses.length > 0 && (
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 bg-violet-50 rounded-lg flex items-center justify-center">
+                        <Brain className="w-4 h-4 text-violet-600" />
+                      </div>
+                      <h3 className="font-semibold text-ink text-sm">AI Analysis</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-2 pr-4 font-semibold text-warm-gray text-xs uppercase tracking-wider">Condition</th>
+                            <th className="text-left py-2 font-semibold text-warm-gray text-xs uppercase tracking-wider">Analysis</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {aiAnalyses.map(a => (
+                            <tr key={a.condition} className="border-b border-border/50 last:border-0">
+                              <td className="py-2.5 pr-4 align-top">
+                                <span className="font-medium text-ink">{a.condition}</span>
+                              </td>
+                              <td className="py-2.5 align-top">
+                                {a.loading ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-3.5 h-3.5 border-2 border-violet/20 border-t-violet rounded-full animate-spin" />
+                                    <span className="text-warm-gray text-xs">Analyzing...</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-warm-gray whitespace-pre-wrap">{a.analysis}</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}

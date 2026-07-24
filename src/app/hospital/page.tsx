@@ -207,7 +207,8 @@ function ScanHistoryPanel({ token }: { token: string | null }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-ink font-medium truncate">{s.scannedProfileName || s.scannedProfileId}</p>
+              <p className="text-sm text-ink font-medium truncate">{s.scannedProfileName || 'Unknown'}</p>
+              <p className="text-xs text-warm-gray font-mono">{s.scannedProfileId}</p>
               <p className="text-xs text-warm-gray">{new Date(s.scanTime).toLocaleString()}</p>
             </div>
             <button
@@ -238,7 +239,7 @@ function EmergencyLookup({ token }: { token: string | null }) {
     if (!emergencyId.trim()) return
     setLoading(true); setError(''); setResult(null)
     try {
-      const data = await api.getEmergencyProfile(emergencyId.trim(), token)
+      const data = await api.getEmergencyProfile(emergencyId.trim(), token || undefined)
       if (data) setResult(data)
       else setError('No patient found with that Emergency ID')
     } catch { setError('Network error') }
