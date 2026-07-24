@@ -60,18 +60,18 @@ function LookupContent() {
   }, [token])
 
   useEffect(() => {
-    if (!result?.profileId) { setAiData(null); return }
+    if (!result?.profileId || !token) { setAiData(null); return }
     const conditions = result.conditions?.length ? result.conditions : ['General Health Assessment']
     setAiLoading(true)
     setAiData(null)
     Promise.all(conditions.map(c =>
-      api.analyzeProgress(token || '', result.profileId, c).then(text => ({ condition: c, text }))
+      api.analyzeProgress(token, result.profileId, c).then(text => ({ condition: c, text }))
     )).then(results => {
       const map: Record<string, string> = {}
       results.forEach(r => { if (r.text) map[r.condition] = r.text })
       setAiData(Object.keys(map).length ? map : null)
     }).finally(() => setAiLoading(false))
-  }, [result])
+  }, [result, token])
 
   async function handleLookup() {
     const id = emergencyId.trim()
