@@ -407,26 +407,7 @@ function LookupContent() {
                   </div>
                 )}
                 {medicalMetrics && medicalMetrics.length > 0 && (
-                  <div className="space-y-4">
-                    {groupBy(medicalMetrics, 'metricType').map(([type, metrics]) => {
-                      const grouped = groupByNameAndDate(metrics)
-                      return (
-                        <div key={type} className="bg-card border border-border rounded-xl p-4">
-                          <h3 className="font-semibold text-ink text-sm mb-3 capitalize">{type.replace(/_/g, ' ').toLowerCase()}</h3>
-                          <div className="space-y-4">
-                            {grouped.map(({ name, entries, unit, normalRange }) => {
-                              if (entries.length === 1) {
-                                const m = entries[0]
-                                const flag = getFlag(m.metricValue, normalRange)
-                                return <SingleMetricRow key={name} metric={m} flag={flag} unit={unit} normalRange={normalRange} />
-                              }
-                              return <MultiMetricChart key={name} name={name} entries={entries} unit={unit} normalRange={normalRange} />
-                            })}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                  <MedicalDataReport metrics={medicalMetrics} />
                 )}
 
                 {result.familyHistory && result.familyHistory.length > 0 && (
@@ -597,6 +578,141 @@ function LookupContent() {
   )
 }
 
+function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
+  const byType = groupByType(metrics)
+  const critical = getCriticalFindings(metrics)
+
+  return (
+    <div className="space-y-5">
+      {critical.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-bold text-red-700">Critical Findings ({critical.length})</span>
+          </div>
+          <div className="space-y-0.5">
+            {critical.map(c => (
+              <p key={c.name} className="text-sm text-red-700">
+                {c.arrow} {c.name} {c.direction}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {byType.map(({ type, display, metrics: groupMetrics }) => {
+        const grouped = groupMetricsByName(groupMetrics)
+        const alertCount = grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) !== 'normal').length
+
+        if (type === 'VITALS') {
+          return (
+            <div key={type} className="bg-card border border-border rounded-xl p-4">
+              <h3 className="font-semibold text-ink text-sm mb-3">{display}</h3>
+              <div className="space-y-1.5">
+                {grouped.map(g => {
+                  const flag = getFlag(g.latest.metricValue, g.normalRange)
+                  const dot = flag === 'high' ? '🔴' : flag === 'low' ? '🔵' : '🟢'
+                  return (
+                    <div key={g.name} className="flex items-center justify-between py-1">
+                      <span className="text-sm text-gray-900">{g.name}</span>
+                      <span className="text-sm font-medium text-gray-900">{g.latest.metricValue} {g.unit} {dot}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        }
+
+        return (
+          <div key={type} className="bg-card border border-border rounded-xl p-4">
+            <h3 className="font-semibold text-ink text-sm mb-3">
+              {display}
+              {alertCount > 0 && <span className="ml-2 text-xs font-medium text-red-600">{alertCount} Alert{alertCount > 1 ? 's' : ''}</span>}
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500">Metric</th>
+                    <th className="text-right py-2 pr-4 text-xs font-medium text-gray-500">Previous</th>
+                    <th className="text-right py-2 pr-4 text-xs font-medium text-gray-500">Latest</th>
+                    <th className="text-right py-2 text-xs font-medium text-gray-500">Trend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grouped.map(g => {
+                    const flag = getFlag(g.latest.metricValue, g.normalRange)
+                    const trend = g.previous
+                      ? (parseFloat(g.latest.metricValue) > parseFloat(g.previous.metricValue) ? '🔺' : '🔻')
+                      : '—'
+                    return (
+                      <tr key={g.name} className="border-b border-gray-50 last:border-0">
+                        <td className="py-2 pr-4 text-gray-900 font-medium">{g.name}</td>
+                        <td className="py-2 pr-4 text-right text-gray-500">{g.previous ? `${g.previous.metricValue} ${g.unit}` : '—'}</td>
+                        <td className={`py-2 pr-4 text-right font-medium ${
+                          flag === 'high' ? 'text-red-600' : flag === 'low' ? 'text-blue-600' : 'text-gray-900'
+                        }`}>
+                          {g.latest.metricValue} {g.unit}
+                        </td>
+                        <td className="py-2 text-right text-sm">{trend}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function groupByType(metrics: MedicalMetric[]): { type: string; display: string; metrics: MedicalMetric[] }[] {
+  const map = new Map<string, MedicalMetric[]>()
+  metrics.forEach(m => {
+    const list = map.get(m.metricType) || []
+    list.push(m)
+    map.set(m.metricType, list)
+  })
+  const labels: Record<string, string> = {
+    VITALS: 'Vitals',
+    BLOOD_SUGAR: 'Blood Sugar',
+    CBC: 'CBC',
+    KIDNEY_FUNCTION: 'Kidney Function',
+  }
+  return Array.from(map.entries()).map(([type, metrics]) => ({
+    type,
+    display: labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    metrics,
+  }))
+}
+
+function groupMetricsByName(metrics: MedicalMetric[]): { name: string; entries: MedicalMetric[]; latest: MedicalMetric; previous: MedicalMetric | null; unit: string; normalRange: string }[] {
+  const map = new Map<string, MedicalMetric[]>()
+  let unit = ''
+  let normalRange = ''
+  metrics.forEach(m => {
+    const list = map.get(m.metricName) || []
+    list.push(m)
+    map.set(m.metricName, list)
+    unit = m.unit
+    normalRange = m.normalRange
+  })
+  return Array.from(map.entries()).map(([name, entries]) => {
+    const sorted = entries.sort((a, b) => new Date(b.measurementDate).getTime() - new Date(a.measurementDate).getTime())
+    return { name, entries: sorted, latest: sorted[0], previous: sorted[1] || null, unit, normalRange }
+  })
+}
+
+function getCriticalFindings(metrics: MedicalMetric[]): { name: string; arrow: string; direction: string }[] {
+  const grouped = groupMetricsByName(metrics)
+  return grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) !== 'normal').map(g => {
+    const flag = getFlag(g.latest.metricValue, g.normalRange)
+    return { name: g.name, arrow: flag === 'high' ? '↑' : '↓', direction: flag === 'high' ? 'High' : 'Low' }
+  })
+}
+
 function getFlag(value: string, normalRange: string): 'high' | 'low' | 'normal' {
   const v = parseFloat(value)
   if (isNaN(v)) return 'normal'
@@ -611,151 +727,4 @@ function getFlag(value: string, normalRange: string): 'high' | 'low' | 'normal' 
     return 'normal'
   }
   return 'normal'
-}
-
-function groupBy<T>(arr: T[], key: keyof T): [string, T[]][] {
-  const map: Record<string, T[]> = {}
-  arr.forEach(item => {
-    const k = String(item[key])
-    if (!map[k]) map[k] = []
-    map[k].push(item)
-  })
-  return Object.entries(map)
-}
-
-function parseRange(normalRange: string): { normalStart: number; normalEnd: number; valuePct: number } | null {
-  const parts = normalRange.replace(/[<>=]/g, '').split('-').map(s => parseFloat(s.trim()))
-  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] < parts[1]) {
-    const margin = (parts[1] - parts[0]) * 0.5
-    const min = parts[0] - margin
-    const max = parts[1] + margin
-    return {
-      normalStart: ((parts[0] - min) / (max - min)) * 100,
-      normalEnd: ((parts[1] - min) / (max - min)) * 100,
-      valuePct: 50,
-    }
-  }
-  return null
-}
-
-function TrendIcon({ status }: { status: string }) {
-  if (status === 'IMPROVING') return (
-    <svg width="20" height="12" viewBox="0 0 20 12" fill="none" className="shrink-0">
-      <path d="M0 10 L5 6 L10 8 L15 2 L20 4" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  )
-  if (status === 'DETERIORATING') return (
-    <svg width="20" height="12" viewBox="0 0 20 12" fill="none" className="shrink-0">
-      <path d="M0 2 L5 6 L10 4 L15 10 L20 8" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  )
-  if (status === 'STABLE') return (
-    <svg width="20" height="12" viewBox="0 0 20 12" fill="none" className="shrink-0">
-      <path d="M0 6 L7 6 L13 6 L20 6" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-    </svg>
-  )
-  return null
-}
-
-function groupByNameAndDate(metrics: MedicalMetric[]): { name: string; entries: MedicalMetric[]; unit: string; normalRange: string }[] {
-  const map = new Map<string, MedicalMetric[]>()
-  let unit = ''
-  let normalRange = ''
-  metrics.forEach(m => {
-    const list = map.get(m.metricName) || []
-    list.push(m)
-    map.set(m.metricName, list)
-    unit = m.unit
-    normalRange = m.normalRange
-  })
-  return Array.from(map.entries()).map(([name, entries]) => ({
-    name,
-    entries: entries.sort((a, b) => new Date(a.measurementDate).getTime() - new Date(b.measurementDate).getTime()),
-    unit,
-    normalRange,
-  }))
-}
-
-function SingleMetricRow({ metric, flag, unit, normalRange }: { metric: MedicalMetric; flag: string; unit: string; normalRange: string }) {
-  const range = parseRange(normalRange)
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-medium text-gray-900 truncate">{metric.metricName}</span>
-          {metric.trendStatus !== 'UNKNOWN' && <TrendIcon status={metric.trendStatus} />}
-        </div>
-        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
-          flag === 'high' ? 'bg-red-100 text-red-700' :
-          flag === 'low' ? 'bg-blue-100 text-blue-700' :
-          'bg-green-100 text-green-700'
-        }`}>
-          {metric.metricValue} {unit}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-gray-100 rounded-full relative overflow-hidden">
-          {range && (
-            <div className="absolute inset-y-0 rounded-full bg-green-200" style={{
-              left: `${range.normalStart}%`,
-              width: `${range.normalEnd - range.normalStart}%`,
-            }} />
-          )}
-          {range && (
-            <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-white shadow-sm" style={{
-              left: `${range.valuePct}%`,
-              backgroundColor: flag === 'high' ? '#dc2626' : flag === 'low' ? '#2563eb' : '#16a34a',
-              transform: 'translate(-50%, -50%)',
-            }} />
-          )}
-        </div>
-        <span className="text-[10px] text-gray-400 shrink-0 w-14 text-right">{normalRange}</span>
-      </div>
-    </div>
-  )
-}
-
-function MultiMetricChart({ name, entries, unit, normalRange }: { name: string; entries: MedicalMetric[]; unit: string; normalRange: string }) {
-  const values = entries.map(e => parseFloat(e.metricValue)).filter(v => !isNaN(v))
-  if (values.length === 0) return null
-
-  const parts = normalRange.replace(/[<>=]/g, '').split('-').map(s => parseFloat(s.trim()))
-  const normalLow = parts.length === 2 ? parts[0] : null
-  const normalHigh = parts.length === 2 ? parts[1] : null
-
-  const data = entries.map(e => ({
-    date: e.measurementDate.slice(5),
-    value: parseFloat(e.metricValue),
-    raw: e.metricValue,
-    flag: getFlag(e.metricValue, normalRange),
-  }))
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-900">{name}</span>
-        <span className="text-[10px] text-gray-400">Range: {normalRange} {unit}</span>
-      </div>
-      <div className="bg-gray-50 rounded-lg p-2">
-        <ResponsiveContainer width="100%" height={140}>
-          <LineChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
-            {normalLow !== null && normalHigh !== null && (
-              <ReferenceArea y1={normalLow} y2={normalHigh} fill="#dcfce7" fillOpacity={0.6} />
-            )}
-            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-            <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#6b7280"
-              strokeWidth={1.5}
-              dot={{ r: 4, strokeWidth: 1.5, stroke: '#fff', fill: '#6b7280' }}
-              activeDot={{ r: 5, strokeWidth: 0, fill: '#111827' }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  )
 }
