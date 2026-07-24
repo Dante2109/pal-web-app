@@ -174,7 +174,7 @@ function PatientLookup({ token }: { token: string | null }) {
         setResult(data)
         if (data.profileId && token_self) {
           setAiLoading(true)
-          api.analyzeProgress(token_self, data.profileId).then(text => {
+          api.getMedicalData(token_self, data.profileId).then(text => {
             if (text) setAiData({ 'Overall Assessment': text })
           }).finally(() => setAiLoading(false))
         }
@@ -382,7 +382,7 @@ function AIAnalysis({ token }: { token: string | null }) {
     if (!profileId.trim() || !condition.trim() || !token) return
     setLoading(true); setResult('')
     try {
-      const data = await api.analyzeProgress(token, profileId.trim(), condition.trim())
+      const data = await api.getMedicalData(profileId.trim(), token)
       setResult(data || 'No analysis available')
     } catch { setResult('Error fetching analysis') }
     finally { setLoading(false) }

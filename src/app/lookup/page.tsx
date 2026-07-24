@@ -72,7 +72,7 @@ function LookupContent() {
     setAiAnalyses(initial)
 
     result.conditions.forEach((condition, idx) => {
-      api.analyzeProgress(result.profileId, condition, t).then(analysis => {
+      api.getMedicalData(result.profileId, t).then(analysis => {
         setAiAnalyses(prev => {
           const next = [...prev]
           next[idx] = { condition, analysis: analysis || 'No analysis available', loading: false }
@@ -414,7 +414,7 @@ function LookupContent() {
                   </div>
                 )}
 
-                {aiAnalyses.length > 0 && (
+                {aiAnalyses.some(a => !a.loading && a.analysis !== 'No analysis available') && (
                   <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-7 h-7 bg-violet-50 rounded-lg flex items-center justify-center">
@@ -431,7 +431,7 @@ function LookupContent() {
                           </tr>
                         </thead>
                         <tbody>
-                          {aiAnalyses.map(a => (
+                          {aiAnalyses.filter(a => !a.loading && a.analysis !== 'No analysis available').map(a => (
                             <tr key={a.condition} className="border-b border-border/50 last:border-0">
                               <td className="py-2.5 pr-4 align-top">
                                 <span className="font-medium text-ink">{a.condition}</span>
@@ -521,6 +521,32 @@ function LookupContent() {
                         <a href={`tel:${result.primaryDoctor.doctorPhone}`} className="text-sm text-teal font-medium inline-flex items-center gap-1.5 hover:underline mt-0.5">
                           <Phone className="w-3.5 h-3.5" /> {result.primaryDoctor.doctorPhone}
                         </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {result.insuranceDetails?.providerName && (
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M12 9v6" /><path d="M9 12h6" /></svg>
+                      </div>
+                      <h3 className="font-semibold text-ink text-sm">Insurance</h3>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-sm text-ink"><span className="text-warm-gray">Provider:</span> {result.insuranceDetails.providerName}</p>
+                      {result.insuranceDetails.policyNumber && (
+                        <p className="text-sm text-ink"><span className="text-warm-gray">Policy:</span> <span className="font-mono">{result.insuranceDetails.policyNumber}</span></p>
+                      )}
+                      {result.insuranceDetails.groupId && (
+                        <p className="text-sm text-ink"><span className="text-warm-gray">Group:</span> <span className="font-mono">{result.insuranceDetails.groupId}</span></p>
+                      )}
+                      {result.insuranceDetails.coverageType && (
+                        <p className="text-sm text-ink"><span className="text-warm-gray">Coverage:</span> {result.insuranceDetails.coverageType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</p>
+                      )}
+                      {result.insuranceDetails.expirationDate && (
+                        <p className="text-sm text-ink"><span className="text-warm-gray">Valid until:</span> {result.insuranceDetails.expirationDate}</p>
                       )}
                     </div>
                   </div>

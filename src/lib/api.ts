@@ -59,6 +59,16 @@ export async function logout(token: string): Promise<ApiResponse<null>> {
 
 // ---------- Emergency (public) ----------
 
+export interface InsuranceDetails {
+  id?: string
+  profileId?: string
+  providerName?: string
+  policyNumber?: string
+  groupId?: string
+  coverageType?: string
+  expirationDate?: string
+}
+
 export interface EmergencyProfileResponse {
   profileId: string
   firstName: string
@@ -82,6 +92,7 @@ export interface EmergencyProfileResponse {
   vaccinations?: string[]
   familyHistory?: string[]
   emergencyId: string
+  insuranceDetails?: InsuranceDetails
 }
 
 export async function getEmergencyProfile(emergencyId: string, token?: string): Promise<EmergencyProfileResponse | null> {
@@ -408,15 +419,14 @@ export async function createDoctor(token: string, data: Partial<Doctor>): Promis
 
 // ---------- AI ----------
 
-export async function analyzeProgress(profileId: string, condition?: string, token?: string | null): Promise<string | null> {
-  const url = condition
-    ? `${BASE_URL}/api/v1/ai/analyze/${profileId}?condition=${encodeURIComponent(condition)}`
-    : `${BASE_URL}/api/v1/ai/analyze/${profileId}`
+export async function getMedicalData(profileId: string, token?: string | null): Promise<string | null> {
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(url, { headers })
+  const res = await fetch(`${BASE_URL}/api/v1/medical-data/${profileId}`, { headers })
   if (!res.ok) return null
-  return res.text()
+  const json = await res.json()
+  if (!json.data || (Array.isArray(json.data) && json.data.length === 0)) return null
+  return typeof json.data === 'string' ? json.data : JSON.stringify(json.data)
 }
 
 export async function chatWithEmergencyProfile(emergencyId: string, question: string): Promise<string | null> {
