@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { AlertTriangle, Search, Download, Printer, X, Phone, Stethoscope, Pill, Activity, Syringe, Dna, HeartPulse, QrCode, Shield, User, Bone, IdCard, Calendar, ChevronRight, ChevronDown } from 'lucide-react'
-import { Card, Badge, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, LineChart } from '@tremor/react'
+import { Card, Badge, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@tremor/react'
 import * as api from '@/lib/api'
 import type { EmergencyProfileResponse, MedicalMetric } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -586,25 +586,40 @@ function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
     setOpenSections(prev => ({ ...prev, [type]: !prev[type] }))
   }
 
+  const alertOnly = byType
+    .map(({ type, display, metrics: groupMetrics }) => {
+      const grouped = groupMetricsByName(groupMetrics)
+      const flagged = grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) !== 'normal')
+      const highCount = grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) === 'high').length
+      return { type, display, flagged, highCount }
+    })
+    .filter(s => s.flagged.length > 0)
+
+  if (alertOnly.length === 0) return null
+
   return (
     <div className="space-y-2">
-      {byType.map(({ type, display, metrics: groupMetrics }) => {
-        const grouped = groupMetricsByName(groupMetrics)
-        const alertCount = grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) !== 'normal').length
-        const isOpen = openSections[type] ?? false
+      {alertOnly.map(({ type, display, flagged, highCount }) => {
+        const isOpen = openSections[type] ?? (type === 'VITALS')
 
         if (type === 'VITALS') {
           return (
             <Card key={type} className="!p-4">
-              <h3 className="font-semibold text-gray-900 text-sm mb-3">{display}</h3>
-              <div className="space-y-1.5">
-                {grouped.map(g => {
+              <div className="flex items-center gap-2 mb-3">
+                <span className="font-semibold text-gray-900 text-sm">{display}</span>
+                {highCount > 0 && <Badge className="!bg-red-100 !text-red-700 !text-xs">{highCount} Alert{highCount > 1 ? 's' : ''}</Badge>}
+              </div>
+              <div className="space-y-2">
+                {flagged.map(g => {
                   const flag = getFlag(g.latest.metricValue, g.normalRange)
-                  const dot = flag === 'high' ? '🔴' : flag === 'low' ? '🔵' : '🟢'
+                  const dot = flag === 'high' ? '🔴' : '🔵'
                   return (
-                    <div key={g.name} className="flex items-center justify-between py-1">
+                    <div key={g.name} className="flex items-center justify-between py-1.5">
                       <span className="text-sm text-gray-900">{g.name}</span>
-                      <span className="text-sm font-medium text-gray-900">{g.latest.metricValue} {g.unit} {dot}</span>
+                      <span className="text-sm font-medium text-gray-900 shrink-0 ml-4 text-right">
+                        {g.latest.metricValue} {g.unit} {dot}<br />
+                        <span className="text-[10px] text-gray-400 font-normal">{g.latest.measurementDate}</span>
+                      </span>
                     </div>
                   )
                 })}
@@ -621,7 +636,7 @@ function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
             >
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-gray-900 text-sm">{display}</span>
-                {alertCount > 0 && <Badge className="!bg-red-100 !text-red-700 !text-xs">{alertCount} Alert{alertCount > 1 ? 's' : ''}</Badge>}
+                {highCount > 0 && <Badge className="!bg-red-100 !text-red-700 !text-xs">{highCount} Alert{highCount > 1 ? 's' : ''}</Badge>}
               </div>
               {isOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
             </button>
@@ -632,25 +647,27 @@ function MedicalDataReport({ metrics }: { metrics: MedicalMetric[] }) {
                   <TableHead>
                     <TableRow>
                       <TableHeaderCell className="!text-xs !text-gray-500 !py-2">Metric</TableHeaderCell>
-                      <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Previous</TableHeaderCell>
-                      <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Latest</TableHeaderCell>
+                      <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Value</TableHeaderCell>
+                      <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Normal Range</TableHeaderCell>
+                        <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Previous</TableHeaderCell>
                       <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Trend</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {grouped.map(g => {
+                    {flagged.map(g => {
                       const flag = getFlag(g.latest.metricValue, g.normalRange)
                       const trend = g.previous
                         ? (parseFloat(g.latest.metricValue) > parseFloat(g.previous.metricValue) ? '🔺' : '🔻')
                         : '—'
-                      const color = flag === 'high' ? 'text-red-600' : flag === 'low' ? 'text-blue-600' : ''
+                      const color = flag === 'high' ? 'text-red-600' : 'text-blue-600'
                       return (
                         <TableRow key={g.name}>
                           <TableCell className="!py-2 !text-gray-900 !font-medium">{g.name}</TableCell>
-                          <TableCell className="!py-2 !text-right !text-gray-500">{g.previous ? `${g.previous.metricValue} ${g.unit}` : '—'}</TableCell>
-                          <TableCell className={`!py-2 !text-right !font-medium ${color || '!text-gray-900'}`}>
+                          <TableCell className={`!py-2 !text-right !font-medium ${color}`}>
                             {g.latest.metricValue} {g.unit}
                           </TableCell>
+                          <TableCell className="!py-2 !text-right !text-gray-500">{g.normalRange}</TableCell>
+                            <TableCell className="!py-2 !text-right !text-gray-500">{g.previous ? `${g.previous.metricValue} ${g.unit}` : '—'}</TableCell>
                           <TableCell className="!py-2 !text-right">{trend}</TableCell>
                         </TableRow>
                       )
