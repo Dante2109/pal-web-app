@@ -174,8 +174,8 @@ function PatientLookup({ token }: { token: string | null }) {
         setResult(data)
         if (data.profileId && token_self) {
           setAiLoading(true)
-          api.getMedicalData(data.profileId, token_self).then(metrics => {
-            if (metrics) setAiData({ 'Metrics': `${metrics.length} data points` })
+          api.getAIAnalysis(data.profileId, token_self).then(analysis => {
+            if (analysis) setAiData({ 'AI Analysis': analysis })
           }).finally(() => setAiLoading(false))
         }
       }
