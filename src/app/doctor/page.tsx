@@ -5,10 +5,9 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import AuthGuard from '@/components/AuthGuard'
 import DashboardSidebar from '@/components/DashboardSidebar'
-import { Search, Bot, ChevronRight, ChevronDown } from 'lucide-react'
-import { Card, Badge, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@tremor/react'
+import { Search, Bot, Brain } from 'lucide-react'
 import * as api from '@/lib/api'
-import type { ProfileResponse, MedicalMetric } from '@/lib/api'
+import type { ProfileResponse } from '@/lib/api'
 
 export default function DoctorDashboardPage() {
   return (
@@ -375,180 +374,54 @@ function RecordsLookup({ token }: { token: string | null }) {
 
 function AIAnalysis({ token }: { token: string | null }) {
   const [profileId, setProfileId] = useState('')
-  const [metrics, setMetrics] = useState<MedicalMetric[] | null>(null)
+  const [result, setResult] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
-
-  function toggle(type: string) {
-    setOpenSections(prev => ({ ...prev, [type]: !prev[type] }))
-  }
 
   async function handleAnalyze() {
     if (!profileId.trim() || !token) return
-    setLoading(true); setError(''); setMetrics(null)
+    setLoading(true); setError(''); setResult(null)
     try {
-      const data = await api.getMedicalData(profileId.trim(), token)
-      setMetrics(data)
-      if (!data) setError('No medical data found for this profile.')
-    } catch { setError('Error fetching medical data') }
+      const data = await api.getAIAnalysis(profileId.trim(), token)
+      if (data) setResult(data)
+      else setError('No analysis available for this profile.')
+    } catch { setError('Error fetching analysis') }
     finally { setLoading(false) }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-bold text-ink">Medical Data Lookup</h2>
-        <p className="text-xs text-warm-gray">Enter a Patient Profile ID to view their medical metrics.</p>
-        <div className="flex gap-2">
-          <input
-            type="text" value={profileId} onChange={e => setProfileId(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAnalyze()}
-            placeholder="Profile UUID"
-            className="flex-1 px-4 py-2.5 bg-base border border-border rounded-lg text-sm text-ink placeholder:text-warm-gray focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition-all font-mono"
-          />
-          <button
-            onClick={handleAnalyze} disabled={loading || !profileId.trim()}
-            className="bg-teal text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-teal/90 disabled:opacity-50 transition-colors flex items-center gap-2 shrink-0"
-          >
-            {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Loading</> : 'Fetch'}
-          </button>
+    <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+          <Brain className="w-5 h-5 text-blue-600" />
         </div>
-        {error && <p className="text-xs text-critical bg-critical-light rounded-lg px-3 py-2">{error}</p>}
+        <div>
+          <h2 className="text-sm font-bold text-ink">AI Medical Analysis</h2>
+          <p className="text-xs text-warm-gray">Generate AI-powered analysis for a patient profile.</p>
+        </div>
       </div>
-
-      {metrics && metrics.length > 0 && (
-        <div className="space-y-2">
-          {groupByType(metrics).map(({ type, display, metrics: groupMetrics }) => {
-            const grouped = groupMetricsByName(groupMetrics)
-            const alertCount = grouped.filter(g => getFlag(g.latest.metricValue, g.normalRange) !== 'normal').length
-
-            if (type === 'VITALS') {
-              return (
-                <Card key={type} className="!p-4">
-                  <h3 className="font-semibold text-gray-900 text-sm mb-3">{display}</h3>
-                  <div className="space-y-1.5">
-                    {grouped.map(g => {
-                      const flag = getFlag(g.latest.metricValue, g.normalRange)
-                      const dot = flag === 'high' ? '🔴' : flag === 'low' ? '🔵' : '🟢'
-                      return (
-                        <div key={g.name} className="flex items-center justify-between py-1">
-                          <span className="text-sm text-gray-900">{g.name}</span>
-                          <span className="text-sm font-medium text-gray-900">{g.latest.metricValue} {g.unit} {dot}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </Card>
-              )
-            }
-
-            const isOpen = openSections[type] ?? false
-            return (
-              <Card key={type} className="!p-0 !overflow-hidden">
-                <button
-                  onClick={() => toggle(type)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-900 text-sm">{display}</span>
-                    {alertCount > 0 && <Badge className="!bg-red-100 !text-red-700 !text-xs">{alertCount} Alert{alertCount > 1 ? 's' : ''}</Badge>}
-                  </div>
-                  {isOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
-                </button>
-                {isOpen && (
-                  <div className="border-t border-gray-100 px-4 py-3">
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableHeaderCell className="!text-xs !text-gray-500 !py-2">Metric</TableHeaderCell>
-                          <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Previous</TableHeaderCell>
-                          <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Latest</TableHeaderCell>
-                          <TableHeaderCell className="!text-xs !text-gray-500 !py-2 !text-right">Trend</TableHeaderCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {grouped.map(g => {
-                          const flag = getFlag(g.latest.metricValue, g.normalRange)
-                          const trend = g.previous
-                            ? (parseFloat(g.latest.metricValue) > parseFloat(g.previous.metricValue) ? '🔺' : '🔻')
-                            : '—'
-                          const color = flag === 'high' ? 'text-red-600' : flag === 'low' ? 'text-blue-600' : ''
-                          return (
-                            <TableRow key={g.name}>
-                              <TableCell className="!py-2 !text-gray-900 !font-medium">{g.name}</TableCell>
-                              <TableCell className="!py-2 !text-right !text-gray-500">{g.previous ? `${g.previous.metricValue} ${g.unit}` : '—'}</TableCell>
-                              <TableCell className={`!py-2 !text-right !font-medium ${color || '!text-gray-900'}`}>
-                                {g.latest.metricValue} {g.unit}
-                              </TableCell>
-                              <TableCell className="!py-2 !text-right">{trend}</TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </Card>
-            )
-          })}
+      <div className="flex gap-2">
+        <input
+          type="text" value={profileId} onChange={e => setProfileId(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAnalyze()}
+          placeholder="Patient Profile UUID"
+          className="flex-1 px-4 py-2.5 bg-base border border-border rounded-lg text-sm text-ink placeholder:text-warm-gray focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition-all font-mono"
+        />
+        <button
+          onClick={handleAnalyze} disabled={loading || !profileId.trim()}
+          className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2 shrink-0"
+        >
+          {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Analyzing</> : 'Analyze'}
+        </button>
+      </div>
+      {error && <p className="text-xs text-critical bg-critical-light rounded-lg px-3 py-2">{error}</p>}
+      {result && (
+        <div className="bg-blue-50 rounded-xl p-4 text-sm text-ink whitespace-pre-wrap max-h-96 overflow-y-auto border border-blue-100 leading-relaxed">
+          {result}
         </div>
       )}
     </div>
   )
-}
-
-function groupByType(metrics: MedicalMetric[]): { type: string; display: string; metrics: MedicalMetric[] }[] {
-  const map = new Map<string, MedicalMetric[]>()
-  metrics.forEach(m => {
-    const list = map.get(m.metricType) || []
-    list.push(m)
-    map.set(m.metricType, list)
-  })
-  const labels: Record<string, string> = {
-    VITALS: 'Vitals',
-    BLOOD_SUGAR: 'Blood Sugar',
-    CBC: 'CBC',
-    KIDNEY_FUNCTION: 'Kidney Function',
-  }
-  return Array.from(map.entries()).map(([type, metrics]) => ({
-    type,
-    display: labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    metrics,
-  }))
-}
-
-function groupMetricsByName(metrics: MedicalMetric[]): { name: string; latest: MedicalMetric; previous: MedicalMetric | null; unit: string; normalRange: string }[] {
-  const map = new Map<string, MedicalMetric[]>()
-  let unit = ''
-  let normalRange = ''
-  metrics.forEach(m => {
-    const list = map.get(m.metricName) || []
-    list.push(m)
-    map.set(m.metricName, list)
-    unit = m.unit
-    normalRange = m.normalRange
-  })
-  return Array.from(map.entries()).map(([name, entries]) => {
-    const sorted = entries.sort((a, b) => new Date(b.measurementDate).getTime() - new Date(a.measurementDate).getTime())
-    return { name, latest: sorted[0], previous: sorted[1] || null, unit, normalRange }
-  })
-}
-
-function getFlag(value: string, normalRange: string): 'high' | 'low' | 'normal' {
-  const v = parseFloat(value)
-  if (isNaN(v)) return 'normal'
-  const parts = normalRange.replace(/[<>=]/g, '').split('-').map(s => parseFloat(s.trim()))
-  if (parts.length === 1 && !isNaN(parts[0])) {
-    if (normalRange.includes('<')) return v < parts[0] ? 'normal' : 'high'
-    if (normalRange.includes('>')) return v > parts[0] ? 'normal' : 'low'
-  }
-  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-    if (v < parts[0]) return 'low'
-    if (v > parts[1]) return 'high'
-    return 'normal'
-  }
-  return 'normal'
 }
 
 function NotificationsPanel({ token }: { token: string | null }) {

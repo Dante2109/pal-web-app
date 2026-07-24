@@ -440,6 +440,21 @@ export async function getMedicalData(profileId: string, token?: string | null): 
   return json.data as MedicalMetric[]
 }
 
+export async function getAIAnalysis(profileId: string, token?: string | null): Promise<string | null> {
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(`${BASE_URL}/api/v1/ai/analyze/${profileId}`, { headers })
+  if (!res.ok) return null
+  const text = await res.text()
+  if (!text) return null
+  try {
+    const json = JSON.parse(text)
+    return json.data || json.message || text
+  } catch {
+    return text
+  }
+}
+
 export async function chatWithEmergencyProfile(emergencyId: string, question: string): Promise<string | null> {
   const res = await fetch(`${BASE_URL}/api/v1/ai/emergency/${emergencyId}/chat?question=${encodeURIComponent(question)}`, {
     cache: 'no-store',
